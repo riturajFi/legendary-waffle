@@ -379,8 +379,7 @@ class EvidenceService:
         }
 
     def get_evidence(self, freight_bill_id: str) -> Dict[str, Any]:
-
-
+        
         return {
             "freight_bill_id": freight_bill_id,
             "freight_bill": self.get_current_freight_bill(freight_bill_id),

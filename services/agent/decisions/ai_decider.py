@@ -26,4 +26,4 @@ class AiDecisionEngine:
         except ValidationError as exc:
             raise RuntimeError(f"AI decision response failed schema validation: {exc}") from exc
 
-        return apply_rule_guardrails(result, checks)
+        return apply_rule_guardrails(result, checks, context=context)

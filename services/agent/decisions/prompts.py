@@ -21,6 +21,15 @@ Decision policy:
 - approved: clean evidence, no failed checks, no review checks.
 - disputed: strong deterministic failure such as duplicate, overbilling, rate mismatch, or amount mismatch.
 - review_required: missing, ambiguous, weak, or conflicting evidence.
+- If a freight bill has no shipment reference, evaluate it as a contract-only invoice:
+  carrier -> active contracts -> rate rule -> lane.
+- If multiple active contracts exist but exactly one candidate rate rule matches the billed
+  rate/unit and the recomputed base, fuel, GST, and total amounts match, treat the
+  contract ambiguity as resolved and approve.
+- Do not require Shipment or BOL evidence for contract-only invoices when the bill itself
+  has no shipment_reference and the selected contract fully explains the bill.
+- If no candidate contract matches, or more than one candidate could explain the bill,
+  require review.
 - Never approve when any rule check has status fail or review.
 - Keep explanation factual. Do not invent contract, shipment, BOL, or carrier facts.
 """.strip()
