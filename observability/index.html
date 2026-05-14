@@ -34,6 +34,10 @@
     .scenario {
       max-width: 520px;
     }
+    .explanation {
+      max-width: 620px;
+      white-space: pre-wrap;
+    }
     .empty {
       padding: 16px;
       background: white;
@@ -94,11 +98,8 @@
             <tr>
               <th>Freight Bill</th>
               <th>Scenario</th>
+              <th>Agent Explanation</th>
               <th>Status</th>
-              <th>Decision</th>
-              <th>Mode</th>
-              <th>Source</th>
-              <th>Review?</th>
               <th>Scenario Check</th>
             </tr>
           </thead>
@@ -107,11 +108,8 @@
               <tr>
                 <td>${escapeHtml(item.id || '')}</td>
                 <td class="scenario">${escapeHtml(item.scenario || '')}</td>
+                <td class="explanation">${escapeHtml(item.explanation || '')}</td>
                 <td>${escapeHtml(item.result?.status || '')}</td>
-                <td>${escapeHtml(item.result?.decision || '')}</td>
-                <td>${escapeHtml(item.result?.decision_mode || '')}</td>
-                <td>${escapeHtml(item.result?.decision_source || '')}</td>
-                <td>${item.result?.awaiting_review ? 'yes' : 'no'}</td>
                 <td class="check">${scenarioCheckHtml(item.scenario_check)}</td>
               </tr>
             `).join('')}

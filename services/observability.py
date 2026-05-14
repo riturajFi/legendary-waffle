@@ -170,6 +170,7 @@ class ObservabilityLogger:
         entry = {
             "id": freight_bill_id,
             "scenario": scenario,
+            "explanation": record.get("explanation"),
             "result": result,
             "scenario_check": self.scenario_judge.judge(
                 scenario,

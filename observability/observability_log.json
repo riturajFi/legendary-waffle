@@ -330,5 +330,74 @@
       "confidence": 0.9,
       "reason": "Agent verified partial delivery quantities and matched bill to one valid contract but flagged review due to multiple active contracts, fitting scenario intent."
     }
+  },
+  {
+    "id": "FB-2025-104",
+    "scenario": "OVER-BILLING \u2014 BOL confirms 1200 kg delivered on first truck, but this bill claims 1500 kg at the same per-kg rate. Previous bill (FB-2025-103) already billed 800 kg for remaining load. Net over-billing vs actual delivery. Classic case the system must catch.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    },
+    "scenario_check": {
+      "status": "match",
+      "matches": true,
+      "confidence": 0.9,
+      "reason": "Agent flagged contract ambiguity and requested review due to weight discrepancies and overlapping contracts, matching scenario intent to catch over-billing."
+    }
+  },
+  {
+    "id": "FB-2025-105",
+    "scenario": "Rate drift \u2014 billed rate (\u20b98.70/kg) is ~8.75% above the contracted rate (\u20b98.00/kg). Small enough to miss, large enough to matter. Should flag.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    },
+    "scenario_check": {
+      "status": "match",
+      "matches": true,
+      "confidence": 0.95,
+      "reason": "Agent correctly identified rate drift above contract rate and flagged for review as scenario intends."
+    }
+  },
+  {
+    "id": "FB-2025-106",
+    "scenario": "Expired contract \u2014 bill date (2025-03-20) falls after the only contract with this carrier (CC-2023-TCI-001) expired (2024-06-30). A newer contract exists (CC-2024-TCI-002) with different pricing/units.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    },
+    "scenario_check": {
+      "status": "match",
+      "matches": true,
+      "confidence": 0.9,
+      "reason": "Agent recognized billing after expired contract and differences in new contract rates, requiring review as scenario intended."
+    }
+  },
+  {
+    "id": "FB-2025-106",
+    "scenario": "Expired contract \u2014 bill date (2025-03-20) falls after the only contract with this carrier (CC-2023-TCI-001) expired (2024-06-30). A newer contract exists (CC-2024-TCI-002) with different pricing/units.",
+    "explanation": "The freight bill FB-2025-106 for carrier TCI Express (CAR003) with no shipment reference is evaluated as a contract-only invoice. The selected contract CC-2024-TCI-002 (effective 2024-07-01 to 2025-06-30) and rate rule CC-2024-TCI-002::BOM-AHM (lane BOM-AHM) was applied. The billed weight is 4500 kg. The billed rate was 7.5 per kg but the contract rate rule allowed rate is only 6.5 per kg, causing the rate check to fail. Base charge computed as 4500 kg * 7.5 = 33750.0 (matches billed). Fuel surcharge is 6% of base charge = 2025.0 (matches billed). GST is 18% of (33750 + 2025) = 6439.5 (matches billed). Total charge is 33750 + 2025 + 6439.5 = 42214.5 (matches billed). Despite the arithmetic correctness, the billed rate rule mismatch triggers the rate_check failure. Duplicate check passed with no duplicates. No shipment references or BOL evidence apply. Therefore, approval is not possible and review is required due to failed rate_check.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    },
+    "scenario_check": {
+      "status": "match",
+      "matches": true,
+      "confidence": 0.95,
+      "reason": "Agent identified contract mismatch and rate_check failure, requiring review as scenario of expired contract implies."
+    }
   }
 ]
