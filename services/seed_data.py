@@ -1,15 +1,17 @@
 import json
+import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List
 
 
-SEED_DATA_PATH = Path(__file__).resolve().parents[1] / "data" / "seed data logistics.json"
+DEFAULT_SEED_DATA_PATH = Path(__file__).resolve().parents[1] / "data" / "seed data logistics.json"
 
 
 @lru_cache(maxsize=1)
 def load_seed_data() -> Dict[str, Any]:
-    return json.loads(SEED_DATA_PATH.read_text())
+    seed_data_path = Path(os.getenv("FREIGHT_SEED_DATA_PATH", DEFAULT_SEED_DATA_PATH))
+    return json.loads(seed_data_path.read_text())
 
 
 def get_seed_freight_bill(freight_bill_id: str) -> Dict[str, Any]:

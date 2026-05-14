@@ -1,4 +1,5 @@
 import json
+import argparse
 from pathlib import Path
 from neo4j import GraphDatabase
 
@@ -16,6 +17,10 @@ driver = GraphDatabase.driver(
 
 def run_query(tx, query, **params):
     tx.run(query, **params)
+
+
+def clear_graph(tx):
+    tx.run("MATCH (n) DETACH DELETE n")
 
 
 def lane_parts(lane_code: str):
@@ -290,10 +295,21 @@ def load_freight_bills(tx, freight_bills):
 
 
 def main():
-    data_path = Path(__file__).resolve().parents[2] / "seed data logistics.json"
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "data_path",
+        nargs="?",
+        default=Path(__file__).resolve().parents[2] / "seed data logistics.json",
+    )
+    parser.add_argument("--clear", action="store_true")
+    args = parser.parse_args()
+
+    data_path = Path(args.data_path)
     data = json.loads(data_path.read_text())
 
     with driver.session() as session:
+        if args.clear:
+            session.execute_write(clear_graph)
         session.execute_write(load_carriers, data["carriers"])
         session.execute_write(load_contracts, data["carrier_contracts"])
         session.execute_write(load_shipments, data["shipments"])
@@ -301,7 +317,7 @@ def main():
         session.execute_write(load_freight_bills, data["freight_bills"])
 
     driver.close()
-    print("Loaded seed graph into Neo4j.")
+    print(f"Loaded {data_path} into Neo4j.")
 
 
 if __name__ == "__main__":
