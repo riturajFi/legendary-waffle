@@ -124,7 +124,8 @@ class FreightAgent:
 
     def _collect_evidence(self, state: AgentState) -> AgentState:
         freight_bill_id = state["freight_bill_id"]
-        return {"evidence": self.evidence_service.get_evidence(freight_bill_id)}
+        evidence = self.evidence_service.get_evidence(freight_bill_id)
+        return {"evidence": self._with_duplicate_statuses(evidence)}
 
     def _run_rules(self, state: AgentState) -> AgentState:
         return {"checks": self.rule_engine.run(state["evidence"])}
@@ -244,6 +245,44 @@ class FreightAgent:
     def _decision_mode(decision_mode: Optional[str]) -> str:
         value = decision_mode or os.getenv("FREIGHT_AGENT_DECIDER", "rules")
         return "ai" if value == "ai" else "rules"
+
+    def _with_duplicate_statuses(self, evidence: Dict[str, Any]) -> Dict[str, Any]:
+        duplicate_evidence = evidence.get("duplicates") or {}
+        duplicates = duplicate_evidence.get("duplicates") or []
+        if not duplicates:
+            return evidence
+
+        return {
+            **evidence,
+            "duplicates": {
+                **duplicate_evidence,
+                "duplicates": [
+                    self._with_duplicate_status(duplicate)
+                    for duplicate in duplicates
+                ],
+            },
+        }
+
+    def _with_duplicate_status(self, duplicate: Dict[str, Any]) -> Dict[str, Any]:
+        duplicate_id = duplicate.get("id")
+        if not duplicate_id:
+            return duplicate
+
+        stored_bill = self.store.get_freight_bill(duplicate_id)
+        if stored_bill is None:
+            return {
+                **duplicate,
+                "stored_status": "not_processed",
+                "stored_decision": None,
+                "stored_decision_source": None,
+            }
+
+        return {
+            **duplicate,
+            "stored_status": stored_bill.get("status"),
+            "stored_decision": stored_bill.get("decision"),
+            "stored_decision_source": stored_bill.get("decision_source"),
+        }
 
     @staticmethod
     def _status_for_review_decision(reviewer_decision: str) -> tuple[str, str]:

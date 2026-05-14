@@ -21,6 +21,10 @@ Decision policy:
 - approved: clean evidence, no failed checks, no review checks.
 - disputed: strong deterministic failure such as duplicate, overbilling, rate mismatch, or amount mismatch.
 - review_required: missing, ambiguous, weak, or conflicting evidence.
+- For duplicate bills, inspect graph_evidence.duplicates.duplicates[].stored_status.
+  Reject/dispute only if a matching duplicate bill has stored_status "approved".
+  If duplicate candidates exist but none are approved or the status is not_processed,
+  require review instead of dispute.
 - If a freight bill has no shipment reference, evaluate it as a contract-only invoice:
   carrier -> active contracts -> rate rule -> lane.
 - If multiple active contracts exist but exactly one candidate rate rule matches the billed
