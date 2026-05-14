@@ -10,18 +10,6 @@ def apply_rule_guardrails(
 ) -> AiDecisionResult:
     non_pass = [check for check in checks if check.get("status") != "pass"]
 
-    if result.status == "review_required" and checks and not non_pass:
-        return AiDecisionResult(
-            status="approved",
-            decision="ai_approved",
-            confidence=max(result.confidence, 0.9),
-            explanation=(
-                "All deterministic rule checks passed. Approved by rule guardrail; "
-                "raw graph candidate ambiguity alone is not enough to require review."
-            ),
-            review_reasons=[],
-        )
-
     if result.status == "approved" and non_pass:
         if _contract_only_resolution_allowed(context or {}, checks, non_pass):
             return result

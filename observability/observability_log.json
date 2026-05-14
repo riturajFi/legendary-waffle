@@ -130,5 +130,49 @@
       "decision_source": "ai",
       "awaiting_review": false
     }
+  },
+  {
+    "id": "FB-2025-101",
+    "scenario": "Clean match \u2014 freight bill references shipment, weight and charges match exactly. Should auto-approve.",
+    "result": {
+      "status": "approved",
+      "decision": "ai_approved",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": false
+    }
+  },
+  {
+    "id": "FB-2025-102",
+    "scenario": "Ambiguous \u2014 carrier has 3 overlapping contracts covering DEL-BOM lane at different rates. No shipment reference. Agent must choose which contract applies.",
+    "result": {
+      "status": "approved",
+      "decision": "ai_approved",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": false
+    }
+  },
+  {
+    "id": "FB-2025-102",
+    "scenario": "Ambiguous \u2014 carrier has 3 overlapping contracts covering DEL-BOM lane at different rates. No shipment reference. Agent must choose which contract applies.",
+    "result": {
+      "status": "approved",
+      "decision": "ai_approved",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": false
+    }
+  },
+  {
+    "id": "FB-2025-102",
+    "scenario": "Ambiguous \u2014 carrier has 3 overlapping contracts covering DEL-BOM lane at different rates. No shipment reference. Agent must choose which contract applies.",
+    "result": {
+      "status": "approved",
+      "decision": "ai_approved",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": false
+    }
   }
 ]
