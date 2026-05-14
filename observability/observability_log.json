@@ -31,5 +31,104 @@
       "decision_source": "ai",
       "awaiting_review": true
     }
+  },
+  {
+    "id": "FB-2025-103",
+    "scenario": "Partial delivery \u2014 shipment was for 2000 kg, first BOL delivered 1200 kg, this bill covers remaining 800 kg on a second truck. Agent must trace prior freight bills.",
+    "result": {
+      "status": "approved",
+      "decision": "ai_approved",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": false
+    }
+  },
+  {
+    "id": "FB-2025-104",
+    "scenario": "OVER-BILLING \u2014 BOL confirms 1200 kg delivered on first truck, but this bill claims 1500 kg at the same per-kg rate. Previous bill (FB-2025-103) already billed 800 kg for remaining load. Net over-billing vs actual delivery. Classic case the system must catch.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    }
+  },
+  {
+    "id": "FB-2025-104",
+    "scenario": "OVER-BILLING \u2014 BOL confirms 1200 kg delivered on first truck, but this bill claims 1500 kg at the same per-kg rate. Previous bill (FB-2025-103) already billed 800 kg for remaining load. Net over-billing vs actual delivery. Classic case the system must catch.",
+    "result": {
+      "status": "approved",
+      "decision": "auto_approved",
+      "decision_mode": "ai",
+      "decision_source": "rules_fallback",
+      "awaiting_review": false
+    }
+  },
+  {
+    "id": "FB-2025-104",
+    "scenario": "OVER-BILLING \u2014 BOL confirms 1200 kg delivered on first truck, but this bill claims 1500 kg at the same per-kg rate. Previous bill (FB-2025-103) already billed 800 kg for remaining load. Net over-billing vs actual delivery. Classic case the system must catch.",
+    "result": {
+      "status": "approved",
+      "decision": "ai_approved",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": false
+    }
+  },
+  {
+    "id": "FB-2025-105",
+    "scenario": "Rate drift \u2014 billed rate (\u20b98.70/kg) is ~8.75% above the contracted rate (\u20b98.00/kg). Small enough to miss, large enough to matter. Should flag.",
+    "result": {
+      "status": "approved",
+      "decision": "ai_approved",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": false
+    }
+  },
+  {
+    "id": "FB-2025-104",
+    "scenario": "OVER-BILLING \u2014 BOL confirms 1200 kg delivered on first truck, but this bill claims 1500 kg at the same per-kg rate. Previous bill (FB-2025-103) already billed 800 kg for remaining load. Net over-billing vs actual delivery. Classic case the system must catch.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    }
+  },
+  {
+    "id": "FB-2025-105",
+    "scenario": "Rate drift \u2014 billed rate (\u20b98.70/kg) is ~8.75% above the contracted rate (\u20b98.00/kg). Small enough to miss, large enough to matter. Should flag.",
+    "result": {
+      "status": "approved",
+      "decision": "ai_approved",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": false
+    }
+  },
+  {
+    "id": "FB-2025-104",
+    "scenario": "OVER-BILLING \u2014 BOL confirms 1200 kg delivered on first truck, but this bill claims 1500 kg at the same per-kg rate. Previous bill (FB-2025-103) already billed 800 kg for remaining load. Net over-billing vs actual delivery. Classic case the system must catch.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    }
+  },
+  {
+    "id": "FB-2025-104",
+    "scenario": "OVER-BILLING \u2014 BOL confirms 1200 kg delivered on first truck, but this bill claims 1500 kg at the same per-kg rate. Previous bill (FB-2025-103) already billed 800 kg for remaining load. Net over-billing vs actual delivery. Classic case the system must catch.",
+    "result": {
+      "status": "approved",
+      "decision": "ai_approved",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": false
+    }
   }
 ]

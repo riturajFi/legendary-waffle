@@ -29,6 +29,10 @@ class ReviewRequest(BaseModel):
     modifications: Dict[str, Any] = Field(default_factory=dict)
 
 
+class DevResetRequest(BaseModel):
+    decision_mode: Optional[Literal["rules", "ai"]] = None
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     store = PostgresStore()
@@ -120,6 +124,36 @@ def submit_review(request: Request, freight_bill_id: str, payload: ReviewRequest
         raise HTTPException(status_code=404, detail=f"Freight bill {freight_bill_id} not found")
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc))
+
+    request.app.state.observability.record_freight_bill_result(result)
+    return result
+
+
+@app.post("/dev/reset/{freight_bill_id}")
+def reset_freight_bill_for_dev(
+    request: Request,
+    freight_bill_id: str,
+    payload: Optional[DevResetRequest] = None,
+) -> Dict[str, Any]:
+    try:
+        freight_bill = get_seed_freight_bill(freight_bill_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Seed freight bill {freight_bill_id} not found")
+
+    store: PostgresStore = request.app.state.store
+    agent: FreightAgent = request.app.state.agent
+    reset_options = payload or DevResetRequest()
+
+    try:
+        agent.evidence_service.update_freight_bill(freight_bill)
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Neo4j freight bill {freight_bill_id} not found")
+
+    store.upsert_ingested_bill(freight_bill)
+    try:
+        result = agent.run(freight_bill_id, freight_bill, decision_mode=reset_options.decision_mode)
+    except Exception as exc:
+        result = store.mark_error(freight_bill_id, str(exc))
 
     request.app.state.observability.record_freight_bill_result(result)
     return result

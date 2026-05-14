@@ -30,6 +30,8 @@ Decision policy:
 - If multiple active contracts exist but exactly one candidate rate rule matches the billed
   rate/unit and the recomputed base, fuel, GST, and total amounts match, treat the
   contract ambiguity as resolved and approve.
+- For shipment-path bills, if all deterministic rule checks pass, do not require review
+  only because graph evidence also contains unused candidate contracts.
 - Do not require Shipment or BOL evidence for contract-only invoices when the bill itself
   has no shipment_reference and the selected contract fully explains the bill.
 - If no candidate contract matches, or more than one candidate could explain the bill,
