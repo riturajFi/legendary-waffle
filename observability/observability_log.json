@@ -1,26 +1,26 @@
 [
   {
-    "id": "FB-TEST-WRONG-FUEL",
-    "scenario": "Correct shipment and base charge, but wrong fuel surcharge. Contract expects 8%, bill uses 10%. Should flag or dispute.",
-    "explanation": "AI decision unavailable: Error code: 401 - {'error': {'message': 'Incorrect API key provided: your_key*here. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}. Fallback used. FB-TEST-WRONG-FUEL requires action because weight_check: total billed weight exceeds shipment weight; amount_check: amount mismatch. Decision auto_dispute at confidence 0.87.",
+    "id": "FB-TEST-BASE-1",
+    "scenario": "Baseline clean bill \u2014 should auto-approve. Used as the original bill for duplicate tests. Expected: approve.",
+    "explanation": "Freight bill FB-TEST-BASE-1 for shipment SHP-2025-002 on lane DEL-BLR matches all rule checks: duplicate_check pass (no duplicates), carrier_check pass (linked carrier CAR001 Safexpress Logistics active), shipment_check pass (shipment SHP-2025-002 delivered with weight 850 kg), rate_check pass (billed rate 15.0 equals rate rule CC-2024-SFX-001::DEL-BLR rate_per_kg 15.0 and fuel surcharge percent 8%), weight_check pass (billed weight 850 kg equals delivered weight 850 kg), amount_check pass (base charge 12750.0 = 850kg * 15.0, fuel surcharge 1020.0 = 12750.0 * 8% / 100, GST 2479.0 \u2248 (12750.0 + 1020.0) * 18%, total 16249.0 \u2248 12750.0 + 1020.0 + 2479.0). Rate rule has no revised fuel surcharge percent or revised_on date, so original 8% fuel surcharge used as bill date 2025-02-15 is after contract effective date 2024-01-01. Bill is linked to contract CC-2024-SFX-001 active during bill and shipment dates. BOL weight 850 kg corroborates shipment and freight bill weight. No duplicates found. All deterministic rules pass with consistent and matching evidence chain carrier -> contract & rate rule -> shipment -> BOL -> freight bill charges and math.",
     "result": {
-      "status": "disputed",
-      "decision": "auto_dispute",
+      "status": "approved",
+      "decision": "ai_approved",
       "decision_mode": "ai",
-      "decision_source": "rules_fallback",
+      "decision_source": "ai",
       "awaiting_review": false
     },
     "scenario_check": {
-      "status": "error",
-      "matches": null,
-      "confidence": 0.0,
-      "reason": "Scenario check failed: Error code: 401 - {'error': {'message': 'Incorrect API key provided: your_key*here. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': "
+      "status": "match",
+      "matches": true,
+      "confidence": 0.95,
+      "reason": "Scenario expects approval for a baseline clean bill; agent explanation confirms all checks pass and final status is approved."
     }
   },
   {
-    "id": "FB-TEST-WRONG-FUEL",
-    "scenario": "Correct shipment and base charge, but wrong fuel surcharge. Contract expects 8%, bill uses 10%. Should flag or dispute.",
-    "explanation": "The freight bill FB-TEST-WRONG-FUEL for shipment SHP-2025-002 on lane DEL-BLR with carrier Safexpress Logistics matches the contract CC-2024-SFX-001 and rate rule CC-2024-SFX-001::DEL-BLR with billed weight 850 kg and rate 15.0 per kg yielding base charge 850 * 15.0 = 12750.0 as expected. The fuel surcharge is billed as 1275.0 but expected 1020.0 = 12750 * 8% (fuel surcharge percent 8%). GST billed is 2524.5 but expected 2478.6 = (12750 + 1020) * 18%. Total amount billed is 16549.5 but expected 16248.6 = 12750 + 1020 + 2478.6. Deterministic rule checks failed on weight_check (total billed weight 3450 > shipment weight 850) and amount_check (fuel surcharge, GST, and total mismatch). Due to these fails, review is required. There are no duplicates and the carrier and shipment are valid. Exact contract found by shipment date. Review reasons: weight check failed due to total billed weight exceeding shipment weight, amount check failed due to billed fuel surcharge and GST mismatch with contract rate rule calculations.",
+    "id": "FB-TEST-PARTIAL-PRIOR",
+    "scenario": "Partial shipment prior bill \u2014 this bill claims 800 kg for SHP-2025-001. Used as previous bill evidence for cumulative overbilling tests. Expected: review_missing_bol_proof.",
+    "explanation": "All rule checks pass: duplicates no dups found, carrier linked (CAR001 Safexpress Logistics active), shipment present (SHP-2025-001 partially delivered with total 2000 kg), rate check passes with billed rate 12.5 matching selected rate rule CC-2024-SFX-001::DEL-BOM with fuel surcharge percent 8, weight check passes billed weight 800 kg within delivered 1200 kg and total billed 1600 kg < shipment weight 2000 kg, amount check passes math: base_charge = 800 kg * 12.5 = 10000.0, fuel = 10000 * 8% = 800.0, GST = (10000 + 800) * 18% = 1944.0, total = 10000 + 800 + 1944 = 12744.0 matching bill. However, graph evidence shows 2 candidate contracts by shipment date active for DEL-BOM lane: CC-2024-SFX-001 and CC-2024-SFX-002 with different rate rules (12.5 @ 8% vs 16 @ 5%). Because both active contracts could explain shipment, and contract selection ambiguity exists despite successful rate rule match, the policy requires review: multiple candidate contracts but only one used by shipment evidence. The bill is shipment-path with known shipment and BOL partial weights. No duplicates found. Decision is review_required due to contract candidate ambiguity.",
     "result": {
       "status": "review_required",
       "decision": "ai_review",
@@ -31,14 +31,14 @@
     "scenario_check": {
       "status": "match",
       "matches": true,
-      "confidence": 0.95,
-      "reason": "Agent identified the wrong fuel surcharge percentage and flagged the invoice for review, aligning with the scenario intent."
+      "confidence": 0.9,
+      "reason": "Agent correctly identified review due to contract ambiguity despite passing checks, matching scenario's expected review."
     }
   },
   {
     "id": "FB-TEST-BASE-1",
-    "scenario": "Baseline clean bill \u2014 should auto-approve. Used as the original bill for duplicate tests.",
-    "explanation": "The freight bill FB-TEST-BASE-1 for shipment SHP-2025-002 on lane DEL-BLR with rated weight 850 kg billed at 15.0 per kg matches the selected contract CC-2024-SFX-001 (effective 2024-01-01 to 2025-12-31) rate rule CC-2024-SFX-001::DEL-BLR. The base charge is 850 * 15 = 12750.0 matching the billed base_charge. Fuel surcharge used is 8% as per rate rule (no revised fuel percent; bill date 2025-02-15 is after effective date), so 12750 * 8/100 = 1020.0 matches actual fuel surcharge. GST is calculated as (12750 + 1020) * 0.18 = 2478.6 expected vs 2479.0 actual (minor rounding difference). Total amount is 12750 + 1020 + 2478.6 = 16248.6 expected vs 16249.0 actual (rounding difference). All deterministic rule checks pass (duplicate_check, carrier_check, shipment_check, rate_check, weight_check, amount_check). Shipment and BOL weights match exactly 850 kg. No duplicates found. Carrier is active and linked. Hence, approved confidently.",
+    "scenario": "Baseline clean bill \u2014 should auto-approve. Used as the original bill for duplicate tests. Expected: approve.",
+    "explanation": "Freight bill FB-TEST-BASE-1 for shipment SHP-2025-002 on lane DEL-BLR dated 2025-02-15 matches contract CC-2024-SFX-001 active from 2024-01-01 to 2025-12-31. Billed weight 850 kg times rate 15.0 = base charge 12750.0 as expected. Fuel surcharge at 8% of base charge = 1020.0 as expected. GST at 18% on (base charge + fuel surcharge) = 2478.6 expected vs 2479.0 billed, difference 0.4 negligible. Total charge sum: 12750.0 + 1020.0 + 2478.6 = 16248.6 expected vs 16249.0 billed, difference 0.4 negligible. Shipment delivered weight 850 kg matches billed weight. All rule checks (duplicate, carrier, shipment, rate, weight, amount) pass with no issues. No duplicates found. Selected contract and rate rule fully explain bill. Hence approved.",
     "result": {
       "status": "approved",
       "decision": "ai_approved",
@@ -50,13 +50,31 @@
       "status": "match",
       "matches": true,
       "confidence": 0.95,
-      "reason": "Scenario requests auto-approval of a clean baseline bill; agent approved with detailed matching validation."
+      "reason": "Scenario expects auto-approve for a clean baseline bill; agent explanation confirms correct validation and approves."
+    }
+  },
+  {
+    "id": "FB-TEST-BASE-1",
+    "scenario": "Baseline clean bill \u2014 should auto-approve. Used as the original bill for duplicate tests. Expected: approve.",
+    "explanation": "Freight bill FB-TEST-BASE-1 for shipment SHP-2025-002 on lane DEL-BLR with carrier Safexpress Logistics (CAR001) is approved. The billed weight is 850 kg, matching the shipment and BOL weight evidence at 850 kg. The selected contract CC-2024-SFX-001 (effective 2024-01-01 to 2025-12-31) with rate rule CC-2024-SFX-001::DEL-BLR applies a rate of 15.0 per kg and a fuel surcharge percent of 8% (no revised fuel surcharge). Base charge calculated as 850 kg * 15.0 = 12750.0 matches billed base charge of 12750.0. Fuel surcharge calculated as 12750.0 * 8 / 100 = 1020.0 matches billed 1020.0. GST calculated as (12750.0 + 1020.0) * 0.18 = 2478.6 closely matches billed 2479.0 (rounding difference 0.4). Total amount calculated as 12750.0 + 1020.0 + 2478.6 = 16248.6 matches billed 16249.0 (rounding difference 0.4). All deterministic rule checks pass (duplicate_check, carrier_check, shipment_check, rate_check, weight_check, amount_check). No duplicates found. No revision in fuel surcharge percent applicable as revised_on is null and bill date 2025-02-15 is after contract effective date. Therefore, freight bill is clean and approved.",
+    "result": {
+      "status": "approved",
+      "decision": "ai_approved",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": false
+    },
+    "scenario_check": {
+      "status": "match",
+      "matches": true,
+      "confidence": 0.95,
+      "reason": "Agent explanation confirms all validations passed and explicitly approves the clean baseline bill as expected."
     }
   },
   {
     "id": "FB-TEST-DUP-1",
-    "scenario": "Triple duplicate \u2014 same carrier and same bill number as FB-TEST-BASE-1. Should be detected as duplicate even though bill_date differs.",
-    "explanation": "Duplicate check failed with duplicates FB-TEST-BASE-1 (approved) and FB-TEST-DUP-CHANGED-AMOUNT (not processed). No selected rate rule with fuel surcharge percent available for direct math validation. Bill FB-TEST-DUP-1 base_charge 12750.0 + fuel_surcharge 1020.0 + gst_amount 2479.0 totals 16249.0 matching billed total, but lacking rate rule means no definitive charge math. Duplicate status fail triggers review_required as per policy.",
+    "scenario": "Triple duplicate \u2014 same carrier and same bill number as FB-TEST-BASE-1. Should be detected as duplicate even though bill_date differs. Expected: dispute_duplicate.",
+    "explanation": "The freight bill FB-TEST-DUP-1 shows a duplicate check failure with duplicates FB-TEST-BASE-1 (approved) and FB-TEST-DUP-CHANGED-AMOUNT (not processed). There is no selected rate rule or contract to perform charge math reconciliation. Due to the duplicate detection (rule check status: fail) and lack of a selected rate rule with fuel surcharge percent, review is required. The duplicates have identical base_charge, fuel_surcharge, gst_amount and total_amount for FB-TEST-BASE-1, but another duplicate with different amounts exists, creating ambiguity needing reviewer intervention.",
     "result": {
       "status": "review_required",
       "decision": "ai_review",
@@ -68,13 +86,13 @@
       "status": "match",
       "matches": true,
       "confidence": 0.9,
-      "reason": "Agent correctly identified the triple duplicate despite differing bill_date and set status to review as required."
+      "reason": "Agent correctly identified duplicates despite date difference and flagged the bill for review due to ambiguity, consistent with the scenario intent."
     }
   },
   {
-    "id": "FB-TEST-DUP-CHANGED-AMOUNT",
-    "scenario": "Duplicate with changed amount \u2014 same carrier and bill number as existing bill, but changed billed weight and amount. Should be treated as duplicate and suspicious amendment.",
-    "explanation": "The duplicate_check rule has status fail due to the presence of a duplicate freight bill (ID FB-TEST-BASE-1) with a lower base charge (12750.0) and total amount (16249.0) than the current bill (base charge 13500.0, total 17204.4). No rate rule or contract candidate is found to explain the bill's charge math, and no shipment or BOL evidence exists. The absence of a selected rate rule with fuel surcharge percent means charge math validation cannot be performed. Due to the failed duplicate check, the bill requires manual review to determine the validity of the reported amount difference and billing accuracy.",
+    "id": "FB-TEST-DUP-2",
+    "scenario": "Triple duplicate \u2014 same carrier and same bill number as FB-TEST-BASE-1 and FB-TEST-DUP-1. Should be rejected or sent to review as duplicate. Expected: dispute_duplicate.",
+    "explanation": "Deterministic rule check duplicate_check failed due to 3 duplicate freight bills found: FB-TEST-BASE-1 (approved), FB-TEST-DUP-1 (review_required), FB-TEST-DUP-CHANGED-AMOUNT (not_processed). No selected rate rule exists to perform charge math validation. Exact shipment reference SHP-2025-002 present but no linked shipment or contract found to resolve duplicates. Duplicate candidate FB-TEST-DUP-1 has stored_status review_required which mandates review. Thus, freight bill FB-TEST-DUP-2 requires review due to duplicate bills with mixed stored decisions and missing contract/rate rule for verification.",
     "result": {
       "status": "review_required",
       "decision": "ai_review",
@@ -85,14 +103,32 @@
     "scenario_check": {
       "status": "match",
       "matches": true,
-      "confidence": 0.95,
-      "reason": "Agent correctly identified duplicate with changed amount and flagged for manual review as suspicious amendment."
+      "confidence": 0.9,
+      "reason": "Agent correctly flagged the freight bill for review due to duplicates with mixed statuses, matching the scenario intent to dispute or review duplicates."
+    }
+  },
+  {
+    "id": "FB-TEST-DUP-CHANGED-AMOUNT",
+    "scenario": "Duplicate with changed amount \u2014 same carrier and bill number as existing bill, but changed billed weight and amount. Should be treated as duplicate and suspicious amendment. Expected: dispute_duplicate.",
+    "explanation": "The duplicate check rule failed because a duplicate freight bill (ID FB-TEST-BASE-1) was found with identical bill number SFX/2025/00234, same carrier CAR001, billed weight 850 kg vs 900 kg in current bill, base charge 12750.0 vs 13500.0, fuel surcharge 1020.0 vs 1080.0, GST 2479.0 vs 2624.4, and total 16249.0 vs 17204.4, indicating changed amounts. No selected rate rule with fuel surcharge percent is available to validate the charges. No contracts or shipments found to reconcile charges. Due to failed duplicate_check rule and unresolved differences with duplicate, the bill requires review. Review reasons: duplicate freight bill found with changed amounts, no rate rule selection to validate math, no contract candidates found.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    },
+    "scenario_check": {
+      "status": "match",
+      "matches": true,
+      "confidence": 0.9,
+      "reason": "Agent identified the bill as duplicate with changed amounts and requires review, aligning with the seed scenario's intent to treat as suspicious duplicate."
     }
   },
   {
     "id": "FB-TEST-SAME-NUM-DIFF-CARRIER",
-    "scenario": "Same bill number but different carrier \u2014 should not be treated as duplicate if duplicate key is carrier_id plus bill_number.",
-    "explanation": "All deterministic rule checks passed: duplicate_check=pass, carrier_check=pass, shipment_check=pass, rate_check=pass, weight_check=pass, amount_check=pass. Selected contract CC-2024-DEL-001 (effective 2024-04-01 to 2025-03-31) with rate rule CC-2024-DEL-001::BLR-CHN applied for shipment SHP-2025-004 on 2025-01-25. Billed weight 1200 kg matches shipment weight 1200 kg and BOL actual_weight_kg 1200. Rate per kg 8.0 matches rate rule rate_per_kg 8.0. Fuel surcharge percent 7% from rate rule used (no revised fuel surcharge or revised_on date). Base charge calculated as 1200 kg * 8.0 = 9600.0 matches billed base charge. Fuel surcharge calculated as 9600.0 * 7 / 100 = 672.0 matches billed fuel surcharge. GST calculated as (9600.0 + 672.0) * 0.18 = 1848.96 matches billed GST. Total amount 9600.0 + 672.0 + 1848.96 = 12120.96 matches billed total. Carrier 'Delhivery Freight' is linked and active. No duplicates found. Thus, the freight bill is fully explained and verified by contract, shipment, BOL, rates, and amounts consistency.",
+    "scenario": "Same bill number but different carrier \u2014 should not be treated as duplicate if duplicate key is carrier_id plus bill_number. Expected: approve.",
+    "explanation": "All deterministic rule checks passed: duplicate_check, carrier_check, shipment_check, rate_check, weight_check, and amount_check all have status pass. The selected contract CC-2024-DEL-001 (effective 2024-04-01 to 2025-03-31) with lane BLR-CHN fully explains the bill. Billed weight is 1200 kg, billed rate is 8.0 per kg, calculating base charge = 1200 * 8.0 = 9600.0. Fuel surcharge percent is 7% as no revised fuel surcharge applies (bill_date 2025-01-25 is after revised_on null). Fuel surcharge = 9600 * 7 / 100 = 672.0. GST at 18% on (base charge + fuel surcharge) = (9600 + 672) * 0.18 = 1848.96. Total amount = 9600 + 672 + 1848.96 = 12120.96 matches the billed total. Shipment SHP-2025-004 is delivered with 1200 kg total weight and BOL weight matches. No duplicate bills found. Carrier Delhivery Freight linked and active. Hence, freight bill FB-TEST-SAME-NUM-DIFF-CARRIER is approved.",
     "result": {
       "status": "approved",
       "decision": "ai_approved",
@@ -104,13 +140,103 @@
       "status": "match",
       "matches": true,
       "confidence": 0.95,
-      "reason": "Agent verified no duplicates found despite same bill number, correctly considering carrier_id in duplicate check as scenario requires."
+      "reason": "Agent correctly approved because same bill number with different carrier is not a duplicate as per scenario intent."
+    }
+  },
+  {
+    "id": "FB-TEST-WRONG-FUEL",
+    "scenario": "Correct shipment and base charge, but wrong fuel surcharge. Contract expects 8%, bill uses 10%. Should flag or dispute. Expected: dispute_wrong_fuel_surcharge.",
+    "explanation": "The freight bill FB-TEST-WRONG-FUEL for shipment SHP-2025-002 with billed weight 850 kg and rate 15.0 matches the selected contract CC-2024-SFX-001 with rate rule CC-2024-SFX-001::DEL-BLR having fuel surcharge percent 8% (no revised fuel surcharge, bill_date 2025-02-15 after revised_on null). The base charge calculation is 850 * 15.0 = 12750.0, matching actual 12750.0. Expected fuel surcharge is 12750.0 * 8 / 100 = 1020.0 but actual is 1275.0. Expected GST is (12750.0 + 1020.0) * 0.18 = 2478.6 but actual is 2524.5. Total expected is 12750.0 + 1020.0 + 2478.6 = 16248.6 but actual total is 16549.5. Additionally, rule checks show fail for weight_check: total billed weight 3450 kg exceeds shipment weight 850 kg, and fail for amount_check due to mismatched fuel surcharge, GST, and total amounts. There are no duplicates. The shipment SHP-2025-002 is found delivered with weight 850 kg. Carrier Safexpress Logistics is active and linked. Due to failed deterministic checks on weight and amounts, review is required.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    },
+    "scenario_check": {
+      "status": "match",
+      "matches": true,
+      "confidence": 0.95,
+      "reason": "Agent identified wrong fuel surcharge and flagged the bill for review as scenario intended."
     }
   },
   {
     "id": "FB-TEST-WRONG-LANE",
-    "scenario": "Shipment reference points to DEL-BLR shipment, but bill claims DEL-BOM lane. Should fail route/lane validation.",
-    "explanation": "The bill FB-TEST-WRONG-LANE has shipment reference SHP-2025-002 with billed weight 850kg and billed rate 15.0. The selected contract CC-2024-SFX-001 has lane DEL-BOM, rate 12.5 per kg, and fuel surcharge percent 8. The charge math: base_charge = 850kg * 15.0 = 12750.0 (matches billed base charge); fuel_surcharge = 12750.0 * 8% = 1020.0 (matches billed fuel); GST = (12750.0 + 1020.0) * 18% = 2478.6 expected vs 2479.0 actual; total = 12750.0 + 1020.0 + 2478.6 = 16248.6 expected vs 16249.0 actual. However, the billed rate 15.0 does not match the allowed rate 12.5 per kg from the selected contract rate rule, failing rate_check. Additionally, total billed weight 4300kg exceeds shipment weight 850kg, failing weight_check. There is no duplicate freight bill. Two active contracts exist for the shipment date lane DEL-BOM, causing contract ambiguity. Because of multiple active contracts and failed deterministic rule checks (rate and weight), review is required.",
+    "scenario": "Shipment reference points to DEL-BLR shipment, but bill claims DEL-BOM lane. Should fail route/lane validation. Expected: dispute_lane_mismatch.",
+    "explanation": "Charge math is correct for selected contract CC-2024-SFX-001 with rate 12.5 and fuel surcharge 8%: base_charge = 850kg * 15.0 = 12750.0 (matches billed), fuel_surcharge = 8% of 12750.0 = 1020.0 (matches billed), gst_amount = 18% of (12750.0 + 1020.0) = 2478.6 (close to billed 2479.0), total = 12750.0 + 1020.0 + 2478.6 = 16248.6 (matches billed 16249.0). However, rate_check fails because billed rate (15.0) does not match allowed rate per kg (12.5) of selected contract's rate_rule CC-2024-SFX-001::DEL-BOM. Also, weight_check fails: total billed weight 4300 exceeds shipment weight 850. There are multiple active contracts for shipment date (2025-02-05) for lane DEL-BOM: CC-2024-SFX-001 and CC-2024-SFX-002, so contract ambiguity requires review. Shipment lane in graph evidence is DEL-BLR, but billed lane is DEL-BOM causing discrepancy. Therefore, deterministic checks failing require review.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    },
+    "scenario_check": {
+      "status": "match",
+      "matches": true,
+      "confidence": 0.95,
+      "reason": "Agent identifies lane mismatch (DEL-BLR vs DEL-BOM) and requires review, matching scenario intent to fail lane validation."
+    }
+  },
+  {
+    "id": "FB-TEST-NO-SHIPMENT-CLEAN-MATH",
+    "scenario": "No shipment reference, but contract math is clean. Agent can identify likely contract from carrier, lane, bill date, rate, and fuel surcharge, but should still review because shipment/BOL proof is missing. Expected: review_missing_shipment_reference.",
+    "explanation": "The freight bill FB-TEST-NO-SHIPMENT-CLEAN-MATH is a contract-only invoice with no shipment reference. The bill date is 2025-04-10. Three active contracts are candidate matches: CC-2025-SFX-003 effective 2025-04-01 to 2026-03-31, CC-2024-SFX-002 effective 2024-06-01 to 2025-05-31, and CC-2024-SFX-001 effective 2024-01-01 to 2025-12-31. The selected contract CC-2025-SFX-003 with rate rule ID CC-2025-SFX-003::DEL-BOM has rate_per_kg 13.2 and fuel_surcharge_percent 9%, matching the billed rate and fuel surcharge percent. The base charge is correctly calculated as 600 kg * 13.2 = 7920.0, fuel surcharge as 7920.0 * 9% = 712.8, GST as (7920.0 + 712.8) * 18% = 1553.9, and total as 7920.0 + 712.8 + 1553.9 = 10186.7, all matching billed amounts. However, there are multiple active contracts for the lane and period, and while the billed rate matches only one contract's rate rule, the presence of multiple candidates triggers a review according to policy. Also, graph evidence states 'requires_review': true under contracts.by_bill_date. There are no duplicate bills, no failed rule checks, and carrier and rate checks pass. Therefore, the decision is review_required due to multiple active contracts candidates causing ambiguity in contract resolution.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    },
+    "scenario_check": {
+      "status": "match",
+      "matches": true,
+      "confidence": 0.95,
+      "reason": "Agent identified contract correctly but chose review due to missing shipment reference, matching scenario intent."
+    }
+  },
+  {
+    "id": "FB-TEST-UNKNOWN-CARRIER-DUP-NAME",
+    "scenario": "Unknown carrier_id but carrier name matches an existing carrier and bill number matches an existing bill. Fallback duplicate detection using normalized carrier_name plus bill_number should catch this. Expected: dispute_duplicate_by_carrier_name.",
+    "explanation": "Deterministic rule checks reveal failures: carrier_check failed due to no carrier evidence found, and weight_check failed because total billed weight (2600 kg) exceeds shipment total weight (850 kg). Although charge math matches the selected contract CC-2024-SFX-001 with rate rule CC-2024-SFX-001::DEL-BLR: billed weight 850 kg * rate 15.0 = base 12750.0; fuel surcharge 8% * 12750.0 = 1020.0; GST 18% on (12750.0 + 1020.0) = 2478.6; total 12750.0 + 1020.0 + 2478.6 = 16248.6 (billed 16249.0), the key non-passing checks require review before approval. Shipment SHP-2025-002 and BOL weight 850 kg confirmed; contract active and matches lane DEL-BLR; fuel surcharge percent 8 used (no revised fuel surcharge).",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    },
+    "scenario_check": {
+      "status": "mismatch",
+      "matches": false,
+      "confidence": 0.9,
+      "reason": "Agent did not dispute as duplicate by carrier name and bill number but flagged unrelated carrier check failure and weight check, leading to review instead."
+    }
+  },
+  {
+    "id": "FB-TEST-PARTIAL-PRIOR",
+    "scenario": "Partial shipment prior bill \u2014 this bill claims 800 kg for SHP-2025-001. Used as previous bill evidence for cumulative overbilling tests. Expected: review_missing_bol_proof.",
+    "explanation": "The freight bill FB-TEST-PARTIAL-PRIOR for shipment SHP-2025-001 on lane DEL-BOM shows correct charge math: base_charge = 800 kg * 12.5 = 10000.0; fuel_surcharge = 10000.0 * 8% = 800.0; gst_amount = (10000.0 + 800.0) * 18% = 1944.0; total_amount = 10000.0 + 800.0 + 1944.0 = 12744.0, matching the bill's actual amounts. The carrier 'Safexpress Logistics' is active and linked. Shipment SHP-2025-001 is partially delivered with a BOL weight of 1200 kg, total shipment weight 2000 kg, and cumulative billed weight 1600 kg across two bills including this one (this bill's 800 kg plus prior 800 kg bill). Two candidate contracts exist by shipment date: CC-2024-SFX-001 (rate 12.5, fuel 8%) and CC-2024-SFX-002 (rate 16.0, fuel 5%), but only one was selected (CC-2024-SFX-001) and its rate matches the billed rate. However, existence of multiple active candidate contracts not fully resolved triggers review according to rules even though rule checks pass and no duplicates present. Hence, status is review_required due to multiple candidate contracts with overlapping validity requiring reviewer judgement.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    },
+    "scenario_check": {
+      "status": "mismatch",
+      "matches": false,
+      "confidence": 0.9,
+      "reason": "Scenario expects 'review_missing_bol_proof' due to partial shipment prior bill; agent cites 'review_required' for multiple contracts instead, missing intended proof check."
+    }
+  },
+  {
+    "id": "FB-TEST-CUMULATIVE-OVERBILL",
+    "scenario": "Partial shipment cumulative overbilling \u2014 shipment total is 2000 kg. If 800 kg was already billed earlier, this 1300 kg bill makes total billed weight 2100 kg. Should dispute. Expected: dispute_cumulative_overbilling.",
+    "explanation": "The bill FB-TEST-CUMULATIVE-OVERBILL for shipment SHP-2025-001 on lane DEL-BOM is audited using contract CC-2024-SFX-001 with rate rule CC-2024-SFX-001::DEL-BOM. The billed weight is 1300 kg at rate 12.5 per kg yielding base charge = 1300 * 12.5 = 16250. The fuel surcharge percent is 8%, so fuel surcharge = 16250 * 8 / 100 = 1300. GST is (16250 + 1300) * 0.18 = 3159. The total amount = 16250 + 1300 + 3159 = 20709, matching the bill amounts exactly. However, the weight_check rule fails because total billed weight across bills is 2900 kg, exceeding shipment_weight 2000 kg, showing overbilling. Multiple active contracts (2) exist but the selected contract uniquely matches the billed rate and amounts. Despite accurate math and matching contract/rate, the overbilling due to cumulative billed weight surpassing shipment weight triggers review_required.",
     "result": {
       "status": "review_required",
       "decision": "ai_review",
@@ -122,7 +248,25 @@
       "status": "match",
       "matches": true,
       "confidence": 0.9,
-      "reason": "Agent correctly identified lane mismatch and related contract ambiguity, leading to review as per scenario intent."
+      "reason": "Agent correctly identified cumulative overbilling exceeding shipment weight and marked review_required as expected."
+    }
+  },
+  {
+    "id": "FB-TEST-PARTIAL-MISSING-BOL",
+    "scenario": "Partial shipment missing BOL proof \u2014 shipment exists and math is correct, but BOL evidence only proves 1200 kg delivered. This bill claims remaining 800 kg without a second BOL. Should go to review. Expected: review_missing_bol_proof.",
+    "explanation": "All deterministic rule checks passed: carrier_check, shipment_check, rate_check, weight_check, amount_check, and duplicate_check have status pass. The charge math reconciles exactly with the selected rate rule CC-2024-SFX-001::DEL-BOM for lane DEL-BOM. The billed weight is 800 kg at a rate of 12.5 per kg yielding base_charge 10000. The fuel surcharge percent is 8%, so 10000 * 8/100 = 800 fuel surcharge. GST at 18% on (10000 + 800) = 1944. Total sums to 10000 + 800 + 1944 = 12744, matching billed total_amount. The bill_date 2025-02-25 is after the contract effective_date 2024-01-01 and before expiry_date 2025-12-31; no revised fuel surcharge applies. However, graph evidence shows two candidate active contracts by shipment_date 2025-01-10: CC-2024-SFX-001 and another premium contract CC-2024-SFX-002 with rate_per_kg 16 and fuel 5%. Presence of 2 active candidate contracts and multiple rate rules on the lane require review despite contract CC-2024-SFX-001 explaining this bill correctly. Shipment SHP-2025-001 has partial delivery (1200 kg on BOL, shipment total 2000 kg), coupled with partial billed weight 800 kg in cumulative billing. These factors contribute to contract ambiguity needing human review.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    },
+    "scenario_check": {
+      "status": "match",
+      "matches": true,
+      "confidence": 0.95,
+      "reason": "Agent identified partial BOL proof and multiple active contracts, correctly deciding review due to missing complete BOL evidence as scenario expects."
     }
   }
 ]
