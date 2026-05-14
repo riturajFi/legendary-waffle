@@ -378,7 +378,9 @@ class EvidenceService:
             "lane": node_to_dict(record["lane"]),
         }
 
-    def get_evidence_pack(self, freight_bill_id: str) -> Dict[str, Any]:
+    def get_evidence(self, freight_bill_id: str) -> Dict[str, Any]:
+
+
         return {
             "freight_bill_id": freight_bill_id,
             "freight_bill": self.get_current_freight_bill(freight_bill_id),

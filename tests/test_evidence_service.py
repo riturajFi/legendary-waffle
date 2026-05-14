@@ -37,7 +37,8 @@ def main():
             print("=" * 100)
             print(f"Evidence pack for {freight_bill_id}")
             print("=" * 100)
-            pprint(service.get_evidence_pack(freight_bill_id), sort_dicts=False)
+            evidence_pack = service.get_evidence(freight_bill_id)
+            pprint(evidence_pack, sort_dicts=False)
             print()
 
     except Exception as exc:
