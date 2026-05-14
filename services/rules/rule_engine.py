@@ -155,7 +155,7 @@ class RuleEngine:
         billed_rate = freight_bill.get("rate_per_kg") or 0
         expected_base = billed_weight * billed_rate
 
-        if not self._money_equal(expected_base, freight_bill.get("base_charge")):
+        if not self._money_equal(expected_base, freight_bill.get("base_charge"), tolerance=0.50):
             return self._check("amount_check", "fail", "base charge mismatch", {
                 "expected_base": round(expected_base, 2),
                 "actual_base": freight_bill.get("base_charge"),
@@ -170,17 +170,17 @@ class RuleEngine:
         expected_total = expected_base + expected_fuel + expected_gst
 
         mismatches = {}
-        if not self._money_equal(expected_fuel, freight_bill.get("fuel_surcharge")):
+        if not self._money_equal(expected_fuel, freight_bill.get("fuel_surcharge"), tolerance=0.50):
             mismatches["fuel_surcharge"] = {
                 "expected": round(expected_fuel, 2),
                 "actual": freight_bill.get("fuel_surcharge"),
             }
-        if not self._money_equal(expected_gst, freight_bill.get("gst_amount")):
+        if not self._money_equal(expected_gst, freight_bill.get("gst_amount"), tolerance=0.50):
             mismatches["gst_amount"] = {
                 "expected": round(expected_gst, 2),
                 "actual": freight_bill.get("gst_amount"),
             }
-        if not self._money_equal(expected_total, freight_bill.get("total_amount")):
+        if not self._money_equal(expected_total, freight_bill.get("total_amount"), tolerance=0.50):
             mismatches["total_amount"] = {
                 "expected": round(expected_total, 2),
                 "actual": freight_bill.get("total_amount"),
@@ -294,11 +294,15 @@ class RuleEngine:
         }
 
     @staticmethod
-    def _money_equal(left: Optional[float], right: Optional[float]) -> bool:
+    def _money_equal(
+        left: Optional[float],
+        right: Optional[float],
+        tolerance: float = 0.05,
+    ) -> bool:
         if left is None or right is None:
             return False
 
-        return abs(float(left) - float(right)) <= 0.05
+        return abs(float(left) - float(right)) <= tolerance
 
     @staticmethod
     def _parse_date(value: str) -> date:
