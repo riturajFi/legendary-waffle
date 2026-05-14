@@ -378,6 +378,37 @@ class EvidenceService:
             "lane": node_to_dict(record["lane"]),
         }
 
+    def get_evidence_pack(self, freight_bill_id: str) -> Dict[str, Any]:
+        return {
+            "freight_bill_id": freight_bill_id,
+            "freight_bill": self.get_current_freight_bill(freight_bill_id),
+            "duplicates": self.find_duplicate_bills(freight_bill_id),
+            "carrier": {
+                "linked": self.get_billed_carrier(freight_bill_id),
+                "exact_name_matches": self.find_carriers_by_exact_name(freight_bill_id),
+                "loose_name_matches": self.find_carriers_by_loose_name(freight_bill_id),
+            },
+            "shipment": {
+                "exact": self.get_exact_shipment_candidate(freight_bill_id),
+                "weak_candidates": self.find_weak_shipment_candidates(freight_bill_id),
+            },
+            "bol": self.get_bols_for_claimed_shipment(freight_bill_id),
+            "previous_bills": self.get_previous_bills_for_same_shipment(freight_bill_id),
+            "cumulative_billing": self.get_cumulative_billing_for_shipment(
+                freight_bill_id,
+            ),
+            "contracts": {
+                "by_bill_date": self.find_contract_candidates(freight_bill_id),
+                "by_shipment_date": self.find_contract_candidates_by_shipment_date(
+                    freight_bill_id,
+                ),
+                "used_by_shipment": self.get_shipment_contract_rate_rule(
+                    freight_bill_id,
+                ),
+            },
+            "rate_rule": self.get_revised_rate_rule(freight_bill_id),
+        }
+
     def _read_records(
         self,
         query: str,
