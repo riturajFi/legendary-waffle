@@ -4,8 +4,12 @@ from typing import Any, Dict, List, Optional
 
 class RuleEngine:
     def run(self, evidence_pack: Dict[str, Any]) -> List[Dict[str, Any]]:
+        duplicate_check = self.duplicate_check(evidence_pack)
+        if duplicate_check["status"] == "fail":
+            return [duplicate_check]
+
         return [
-            self.duplicate_check(evidence_pack),
+            duplicate_check,
             self.carrier_check(evidence_pack),
             self.shipment_check(evidence_pack),
             self.rate_check(evidence_pack),

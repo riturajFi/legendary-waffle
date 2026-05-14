@@ -1,6 +1,8 @@
 import os
 from typing import Any, Dict, List
 
+from services.agent.sanitization import strip_scenario_hints
+
 
 class ExplanationBuilder:
     def build(
@@ -21,7 +23,12 @@ class ExplanationBuilder:
             client = OpenAI()
             response = client.responses.create(
                 model=os.getenv("OPENAI_MODEL", "gpt-4.1-mini"),
-                input=self._prompt(freight_bill, checks, decision, confidence),
+                input=self._prompt(
+                    strip_scenario_hints(freight_bill),
+                    strip_scenario_hints(checks),
+                    decision,
+                    confidence,
+                ),
                 max_output_tokens=160,
             )
             return response.output_text.strip() or fallback

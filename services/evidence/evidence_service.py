@@ -379,35 +379,82 @@ class EvidenceService:
         }
 
     def get_evidence(self, freight_bill_id: str) -> Dict[str, Any]:
-        
-        return {
+        freight_bill = self.get_current_freight_bill(freight_bill_id)
+        duplicates = self.find_duplicate_bills(freight_bill_id)
+
+        base_evidence = {
             "freight_bill_id": freight_bill_id,
-            "freight_bill": self.get_current_freight_bill(freight_bill_id),
-            "duplicates": self.find_duplicate_bills(freight_bill_id),
+            "freight_bill": freight_bill,
+            "duplicates": duplicates,
+        }
+
+        if duplicates["duplicates"]:
+            return {
+                **base_evidence,
+                "evidence_path": "duplicate",
+                "carrier": self._empty_carrier_result(freight_bill_id),
+                "shipment": self._empty_shipment_result(freight_bill_id),
+                "bol": self._bol_result_not_applicable(freight_bill_id, "duplicate bill"),
+                "previous_bills": self._empty_previous_bills_result(freight_bill_id),
+                "cumulative_billing": self._empty_cumulative_billing_result(freight_bill_id),
+                "contracts": self._empty_contracts_result(freight_bill_id),
+                "rate_rule": self._empty_rate_rule_result(freight_bill_id),
+            }
+
+        freight_bill_node = freight_bill.get("freight_bill") or {}
+        if freight_bill_node.get("shipment_reference"):
+            return {
+                **base_evidence,
+                "evidence_path": "shipment",
+                "carrier": {
+                    "linked": self.get_billed_carrier(freight_bill_id),
+                    "exact_name_matches": self._empty_carrier_matches_result(freight_bill_id),
+                    "loose_name_matches": self._empty_carrier_matches_result(freight_bill_id),
+                },
+                "shipment": {
+                    "exact": self.get_exact_shipment_candidate(freight_bill_id),
+                    "weak_candidates": self._empty_weak_shipment_candidates_result(freight_bill_id),
+                },
+                "bol": self.get_bols_for_claimed_shipment(freight_bill_id),
+                "previous_bills": self.get_previous_bills_for_same_shipment(freight_bill_id),
+                "cumulative_billing": self.get_cumulative_billing_for_shipment(
+                    freight_bill_id,
+                ),
+                "contracts": {
+                    "by_bill_date": self._empty_contract_candidates_result(freight_bill_id),
+                    "by_shipment_date": self.find_contract_candidates_by_shipment_date(
+                        freight_bill_id,
+                    ),
+                    "used_by_shipment": self.get_shipment_contract_rate_rule(
+                        freight_bill_id,
+                    ),
+                },
+                "rate_rule": self.get_revised_rate_rule(freight_bill_id),
+            }
+
+        return {
+            **base_evidence,
+            "evidence_path": "contract_only",
             "carrier": {
                 "linked": self.get_billed_carrier(freight_bill_id),
                 "exact_name_matches": self.find_carriers_by_exact_name(freight_bill_id),
                 "loose_name_matches": self.find_carriers_by_loose_name(freight_bill_id),
             },
-            "shipment": {
-                "exact": self.get_exact_shipment_candidate(freight_bill_id),
-                "weak_candidates": self.find_weak_shipment_candidates(freight_bill_id),
-            },
-            "bol": self.get_bols_for_claimed_shipment(freight_bill_id),
-            "previous_bills": self.get_previous_bills_for_same_shipment(freight_bill_id),
-            "cumulative_billing": self.get_cumulative_billing_for_shipment(
+            "shipment": self._empty_shipment_result(freight_bill_id),
+            "bol": self._bol_result_not_applicable(
                 freight_bill_id,
+                "freight bill has no shipment reference",
             ),
+            "previous_bills": self._empty_previous_bills_result(freight_bill_id),
+            "cumulative_billing": self._empty_cumulative_billing_result(freight_bill_id),
             "contracts": {
                 "by_bill_date": self.find_contract_candidates(freight_bill_id),
-                "by_shipment_date": self.find_contract_candidates_by_shipment_date(
-                    freight_bill_id,
-                ),
-                "used_by_shipment": self.get_shipment_contract_rate_rule(
+                "by_shipment_date": self._empty_contract_candidates_result(freight_bill_id),
+                "used_by_shipment": self._empty_shipment_contract_rate_rule_result(
                     freight_bill_id,
                 ),
             },
-            "rate_rule": self.get_revised_rate_rule(freight_bill_id),
+            "rate_rule": self._empty_rate_rule_result(freight_bill_id),
         }
 
     def _read_records(
@@ -447,6 +494,119 @@ class EvidenceService:
         return {
             key: serialize_neo4j_value(record[key])
             for key in record.keys()
+        }
+
+    @staticmethod
+    def _empty_carrier_result(freight_bill_id: str) -> Dict[str, Any]:
+        return {
+            "linked": {"freight_bill_id": freight_bill_id, "carrier": None},
+            "exact_name_matches": EvidenceService._empty_carrier_matches_result(
+                freight_bill_id,
+            ),
+            "loose_name_matches": EvidenceService._empty_carrier_matches_result(
+                freight_bill_id,
+            ),
+        }
+
+    @staticmethod
+    def _empty_carrier_matches_result(freight_bill_id: str) -> Dict[str, Any]:
+        return {
+            "freight_bill_id": freight_bill_id,
+            "carriers_found": 0,
+            "carriers": [],
+        }
+
+    @staticmethod
+    def _empty_shipment_result(freight_bill_id: str) -> Dict[str, Any]:
+        return {
+            "exact": {
+                "freight_bill_id": freight_bill_id,
+                "shipment": None,
+                "shipment_carrier": None,
+                "shipment_lane": None,
+            },
+            "weak_candidates": EvidenceService._empty_weak_shipment_candidates_result(
+                freight_bill_id,
+            ),
+        }
+
+    @staticmethod
+    def _empty_weak_shipment_candidates_result(freight_bill_id: str) -> Dict[str, Any]:
+        return {
+            "freight_bill_id": freight_bill_id,
+            "candidates_found": 0,
+            "candidates": [],
+        }
+
+    @staticmethod
+    def _bol_result_not_applicable(freight_bill_id: str, reason: str) -> Dict[str, Any]:
+        return {
+            "freight_bill_id": freight_bill_id,
+            "found": False,
+            "status": "not_applicable",
+            "reason": reason,
+            "shipment": None,
+            "bols": [],
+        }
+
+    @staticmethod
+    def _empty_previous_bills_result(freight_bill_id: str) -> Dict[str, Any]:
+        return {
+            "freight_bill_id": freight_bill_id,
+            "found": False,
+            "shipment": None,
+            "previous_bills": [],
+            "previous_billed_weight": 0,
+        }
+
+    @staticmethod
+    def _empty_cumulative_billing_result(freight_bill_id: str) -> Dict[str, Any]:
+        return {
+            "freight_bill_id": freight_bill_id,
+            "found": False,
+            "cumulative_billing": None,
+        }
+
+    @staticmethod
+    def _empty_contracts_result(freight_bill_id: str) -> Dict[str, Any]:
+        return {
+            "by_bill_date": EvidenceService._empty_contract_candidates_result(
+                freight_bill_id,
+            ),
+            "by_shipment_date": EvidenceService._empty_contract_candidates_result(
+                freight_bill_id,
+            ),
+            "used_by_shipment": EvidenceService._empty_shipment_contract_rate_rule_result(
+                freight_bill_id,
+            ),
+        }
+
+    @staticmethod
+    def _empty_contract_candidates_result(freight_bill_id: str) -> Dict[str, Any]:
+        return {
+            "freight_bill_id": freight_bill_id,
+            "candidates_found": 0,
+            "requires_review": False,
+            "candidates": [],
+        }
+
+    @staticmethod
+    def _empty_shipment_contract_rate_rule_result(freight_bill_id: str) -> Dict[str, Any]:
+        return {
+            "freight_bill_id": freight_bill_id,
+            "found": False,
+            "shipment": None,
+            "contract": None,
+            "rate_rule": None,
+            "lane": None,
+        }
+
+    @staticmethod
+    def _empty_rate_rule_result(freight_bill_id: str) -> Dict[str, Any]:
+        return {
+            "freight_bill_id": freight_bill_id,
+            "found": False,
+            "rate_rule": None,
         }
 
     @staticmethod

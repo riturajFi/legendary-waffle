@@ -13,7 +13,7 @@ Return one JSON object only:
   "status": "approved" | "disputed" | "review_required",
   "decision": "ai_approved" | "ai_dispute" | "ai_review",
   "confidence": number between 0 and 1,
-  "explanation": "short reviewer-facing explanation",
+  "explanation": "reviewer-facing explanation with traceable arithmetic",
   "review_reasons": ["short reason", "..."]
 }
 
@@ -32,6 +32,14 @@ Decision policy:
   require review.
 - Never approve when any rule check has status fail or review.
 - Keep explanation factual. Do not invent contract, shipment, BOL, or carrier facts.
+- In every explanation, show the exact evidence path used and the charge math:
+  selected contract/rate rule, billed weight, rate, base calculation,
+  fuel surcharge percent used, fuel calculation, GST calculation, and total calculation.
+- If a rate rule has revised_on and revised_fuel_surcharge_percent, explicitly state whether
+  bill_date is on/after revised_on and which fuel surcharge percent was used.
+- For shipment-path bills, include shipment id and BOL weight evidence when available.
+- Do not answer with generic text like "all checks passed" unless the math and evidence path
+  are also shown.
 """.strip()
 
 
