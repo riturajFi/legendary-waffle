@@ -1,12 +1,18 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any, Dict, Literal, Optional
 
 from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from services.agent import FreightAgent
+from services.observability import ObservabilityLogger
 from services.seed_data import get_seed_freight_bill, seed_freight_bill_ids
 from services.storage import PostgresStore
+
+
+OBSERVABILITY_PAGE = Path(__file__).resolve().parents[1] / "observability" / "index.html"
 
 
 class IngestFreightBillRequest(BaseModel):
@@ -28,9 +34,11 @@ async def lifespan(app: FastAPI):
     store = PostgresStore()
     store.init_schema()
     agent = FreightAgent(store=store)
+    observability = ObservabilityLogger()
 
     app.state.store = store
     app.state.agent = agent
+    app.state.observability = observability
 
     try:
         yield
@@ -63,9 +71,12 @@ def ingest_freight_bill(request: Request, payload: IngestFreightBillRequest) -> 
 
     store.upsert_ingested_bill(freight_bill)
     try:
-        return agent.run(payload.id, freight_bill, decision_mode=payload.decision_mode)
+        result = agent.run(payload.id, freight_bill, decision_mode=payload.decision_mode)
     except Exception as exc:
-        return store.mark_error(payload.id, str(exc))
+        result = store.mark_error(payload.id, str(exc))
+
+    request.app.state.observability.record_freight_bill_result(result)
+    return result
 
 
 @app.get("/freight-bills/{freight_bill_id}")
@@ -75,6 +86,7 @@ def get_freight_bill(request: Request, freight_bill_id: str) -> Dict[str, Any]:
     if record is None:
         raise HTTPException(status_code=404, detail=f"Freight bill {freight_bill_id} not found")
 
+    request.app.state.observability.record_freight_bill_result(record)
     return record
 
 
@@ -84,12 +96,23 @@ def get_review_queue(request: Request) -> Dict[str, Any]:
     return {"items": store.list_review_queue()}
 
 
+@app.get("/observability")
+def get_observability_page() -> FileResponse:
+    return FileResponse(OBSERVABILITY_PAGE)
+
+
+@app.get("/observability/log")
+def get_observability_log(request: Request) -> Dict[str, Any]:
+    observability: ObservabilityLogger = request.app.state.observability
+    return {"items": observability.entries()}
+
+
 @app.post("/review/{freight_bill_id}")
 def submit_review(request: Request, freight_bill_id: str, payload: ReviewRequest) -> Dict[str, Any]:
     agent: FreightAgent = request.app.state.agent
 
     try:
-        return agent.resume_after_review(
+        result = agent.resume_after_review(
             freight_bill_id,
             payload.model_dump(exclude_none=True),
         )
@@ -97,3 +120,6 @@ def submit_review(request: Request, freight_bill_id: str, payload: ReviewRequest
         raise HTTPException(status_code=404, detail=f"Freight bill {freight_bill_id} not found")
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc))
+
+    request.app.state.observability.record_freight_bill_result(result)
+    return result

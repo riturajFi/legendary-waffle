@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Freight Observability</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 24px;
+      color: #1f2937;
+      background: #f8fafc;
+    }
+    h1 {
+      font-size: 22px;
+      margin: 0 0 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+    th, td {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+    th {
+      background: #eef2f7;
+      font-weight: 600;
+    }
+    .scenario {
+      max-width: 520px;
+    }
+    .empty {
+      padding: 16px;
+      background: white;
+      border: 1px solid #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+  <h1>Freight Observability</h1>
+  <div id="content" class="empty">Loading...</div>
+
+  <script>
+    async function loadLog() {
+      const response = await fetch('/observability/log');
+      const data = await response.json();
+      const items = data.items || [];
+      const content = document.getElementById('content');
+
+      if (!items.length) {
+        content.textContent = 'No observability records yet.';
+        return;
+      }
+
+      content.className = '';
+      content.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Freight Bill</th>
+              <th>Scenario</th>
+              <th>Status</th>
+              <th>Decision</th>
+              <th>Mode</th>
+              <th>Source</th>
+              <th>Review?</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.slice().reverse().map(item => `
+              <tr>
+                <td>${escapeHtml(item.id || '')}</td>
+                <td class="scenario">${escapeHtml(item.scenario || '')}</td>
+                <td>${escapeHtml(item.result?.status || '')}</td>
+                <td>${escapeHtml(item.result?.decision || '')}</td>
+                <td>${escapeHtml(item.result?.decision_mode || '')}</td>
+                <td>${escapeHtml(item.result?.decision_source || '')}</td>
+                <td>${item.result?.awaiting_review ? 'yes' : 'no'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    loadLog().catch(error => {
+      document.getElementById('content').textContent = error.message;
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+[
+  {
+    "id": "FB-2025-103",
+    "scenario": "Partial delivery \u2014 shipment was for 2000 kg, first BOL delivered 1200 kg, this bill covers remaining 800 kg on a second truck. Agent must trace prior freight bills.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    }
+  },
+  {
+    "id": "FB-2025-105",
+    "scenario": "Rate drift \u2014 billed rate (\u20b98.70/kg) is ~8.75% above the contracted rate (\u20b98.00/kg). Small enough to miss, large enough to matter. Should flag.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    }
+  },
+  {
+    "id": "FB-2025-103",
+    "scenario": "Partial delivery \u2014 shipment was for 2000 kg, first BOL delivered 1200 kg, this bill covers remaining 800 kg on a second truck. Agent must trace prior freight bills.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    }
+  }
+]
