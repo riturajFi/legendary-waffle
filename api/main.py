@@ -15,6 +15,15 @@ from services.storage import PostgresStore
 OBSERVABILITY_PAGE = Path(__file__).resolve().parents[1] / "observability" / "index.html"
 
 
+def _load_dotenv() -> None:
+    try:
+        from dotenv import load_dotenv
+
+        load_dotenv()
+    except Exception:
+        return
+
+
 class IngestFreightBillRequest(BaseModel):
     id: str = Field(..., description="Freight bill id from the seed data, e.g. FB-2025-101")
     decision_mode: Optional[Literal["rules", "ai"]] = Field(
@@ -35,6 +44,7 @@ class DevResetRequest(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _load_dotenv()
     store = PostgresStore()
     store.init_schema()
     agent = FreightAgent(store=store)

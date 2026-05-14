@@ -1,271 +1,26 @@
 [
   {
-    "id": "FB-2025-103",
-    "scenario": "Partial delivery \u2014 shipment was for 2000 kg, first BOL delivered 1200 kg, this bill covers remaining 800 kg on a second truck. Agent must trace prior freight bills.",
+    "id": "FB-TEST-WRONG-FUEL",
+    "scenario": "Correct shipment and base charge, but wrong fuel surcharge. Contract expects 8%, bill uses 10%. Should flag or dispute.",
+    "explanation": "AI decision unavailable: Error code: 401 - {'error': {'message': 'Incorrect API key provided: your_key*here. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}. Fallback used. FB-TEST-WRONG-FUEL requires action because weight_check: total billed weight exceeds shipment weight; amount_check: amount mismatch. Decision auto_dispute at confidence 0.87.",
     "result": {
-      "status": "review_required",
-      "decision": "ai_review",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": true
-    }
-  },
-  {
-    "id": "FB-2025-105",
-    "scenario": "Rate drift \u2014 billed rate (\u20b98.70/kg) is ~8.75% above the contracted rate (\u20b98.00/kg). Small enough to miss, large enough to matter. Should flag.",
-    "result": {
-      "status": "review_required",
-      "decision": "ai_review",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": true
-    }
-  },
-  {
-    "id": "FB-2025-103",
-    "scenario": "Partial delivery \u2014 shipment was for 2000 kg, first BOL delivered 1200 kg, this bill covers remaining 800 kg on a second truck. Agent must trace prior freight bills.",
-    "result": {
-      "status": "review_required",
-      "decision": "ai_review",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": true
-    }
-  },
-  {
-    "id": "FB-2025-103",
-    "scenario": "Partial delivery \u2014 shipment was for 2000 kg, first BOL delivered 1200 kg, this bill covers remaining 800 kg on a second truck. Agent must trace prior freight bills.",
-    "result": {
-      "status": "approved",
-      "decision": "ai_approved",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": false
-    }
-  },
-  {
-    "id": "FB-2025-104",
-    "scenario": "OVER-BILLING \u2014 BOL confirms 1200 kg delivered on first truck, but this bill claims 1500 kg at the same per-kg rate. Previous bill (FB-2025-103) already billed 800 kg for remaining load. Net over-billing vs actual delivery. Classic case the system must catch.",
-    "result": {
-      "status": "review_required",
-      "decision": "ai_review",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": true
-    }
-  },
-  {
-    "id": "FB-2025-104",
-    "scenario": "OVER-BILLING \u2014 BOL confirms 1200 kg delivered on first truck, but this bill claims 1500 kg at the same per-kg rate. Previous bill (FB-2025-103) already billed 800 kg for remaining load. Net over-billing vs actual delivery. Classic case the system must catch.",
-    "result": {
-      "status": "approved",
-      "decision": "auto_approved",
+      "status": "disputed",
+      "decision": "auto_dispute",
       "decision_mode": "ai",
       "decision_source": "rules_fallback",
       "awaiting_review": false
+    },
+    "scenario_check": {
+      "status": "error",
+      "matches": null,
+      "confidence": 0.0,
+      "reason": "Scenario check failed: Error code: 401 - {'error': {'message': 'Incorrect API key provided: your_key*here. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': "
     }
   },
   {
-    "id": "FB-2025-104",
-    "scenario": "OVER-BILLING \u2014 BOL confirms 1200 kg delivered on first truck, but this bill claims 1500 kg at the same per-kg rate. Previous bill (FB-2025-103) already billed 800 kg for remaining load. Net over-billing vs actual delivery. Classic case the system must catch.",
-    "result": {
-      "status": "approved",
-      "decision": "ai_approved",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": false
-    }
-  },
-  {
-    "id": "FB-2025-105",
-    "scenario": "Rate drift \u2014 billed rate (\u20b98.70/kg) is ~8.75% above the contracted rate (\u20b98.00/kg). Small enough to miss, large enough to matter. Should flag.",
-    "result": {
-      "status": "approved",
-      "decision": "ai_approved",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": false
-    }
-  },
-  {
-    "id": "FB-2025-104",
-    "scenario": "OVER-BILLING \u2014 BOL confirms 1200 kg delivered on first truck, but this bill claims 1500 kg at the same per-kg rate. Previous bill (FB-2025-103) already billed 800 kg for remaining load. Net over-billing vs actual delivery. Classic case the system must catch.",
-    "result": {
-      "status": "review_required",
-      "decision": "ai_review",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": true
-    }
-  },
-  {
-    "id": "FB-2025-105",
-    "scenario": "Rate drift \u2014 billed rate (\u20b98.70/kg) is ~8.75% above the contracted rate (\u20b98.00/kg). Small enough to miss, large enough to matter. Should flag.",
-    "result": {
-      "status": "approved",
-      "decision": "ai_approved",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": false
-    }
-  },
-  {
-    "id": "FB-2025-104",
-    "scenario": "OVER-BILLING \u2014 BOL confirms 1200 kg delivered on first truck, but this bill claims 1500 kg at the same per-kg rate. Previous bill (FB-2025-103) already billed 800 kg for remaining load. Net over-billing vs actual delivery. Classic case the system must catch.",
-    "result": {
-      "status": "review_required",
-      "decision": "ai_review",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": true
-    }
-  },
-  {
-    "id": "FB-2025-104",
-    "scenario": "OVER-BILLING \u2014 BOL confirms 1200 kg delivered on first truck, but this bill claims 1500 kg at the same per-kg rate. Previous bill (FB-2025-103) already billed 800 kg for remaining load. Net over-billing vs actual delivery. Classic case the system must catch.",
-    "result": {
-      "status": "approved",
-      "decision": "ai_approved",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": false
-    }
-  },
-  {
-    "id": "FB-2025-101",
-    "scenario": "Clean match \u2014 freight bill references shipment, weight and charges match exactly. Should auto-approve.",
-    "result": {
-      "status": "approved",
-      "decision": "ai_approved",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": false
-    }
-  },
-  {
-    "id": "FB-2025-102",
-    "scenario": "Ambiguous \u2014 carrier has 3 overlapping contracts covering DEL-BOM lane at different rates. No shipment reference. Agent must choose which contract applies.",
-    "result": {
-      "status": "approved",
-      "decision": "ai_approved",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": false
-    }
-  },
-  {
-    "id": "FB-2025-102",
-    "scenario": "Ambiguous \u2014 carrier has 3 overlapping contracts covering DEL-BOM lane at different rates. No shipment reference. Agent must choose which contract applies.",
-    "result": {
-      "status": "approved",
-      "decision": "ai_approved",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": false
-    }
-  },
-  {
-    "id": "FB-2025-102",
-    "scenario": "Ambiguous \u2014 carrier has 3 overlapping contracts covering DEL-BOM lane at different rates. No shipment reference. Agent must choose which contract applies.",
-    "result": {
-      "status": "approved",
-      "decision": "ai_approved",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": false
-    }
-  },
-  {
-    "id": "FB-2025-103",
-    "scenario": "Partial delivery \u2014 shipment was for 2000 kg, first BOL delivered 1200 kg, this bill covers remaining 800 kg on a second truck. Agent must trace prior freight bills.",
-    "result": {
-      "status": "review_required",
-      "decision": "ai_review",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": true
-    }
-  },
-  {
-    "id": "FB-2025-104",
-    "scenario": "OVER-BILLING \u2014 BOL confirms 1200 kg delivered on first truck, but this bill claims 1500 kg at the same per-kg rate. Previous bill (FB-2025-103) already billed 800 kg for remaining load. Net over-billing vs actual delivery. Classic case the system must catch.",
-    "result": {
-      "status": "review_required",
-      "decision": "ai_review",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": true
-    }
-  },
-  {
-    "id": "FB-2025-105",
-    "scenario": "Rate drift \u2014 billed rate (\u20b98.70/kg) is ~8.75% above the contracted rate (\u20b98.00/kg). Small enough to miss, large enough to matter. Should flag.",
-    "result": {
-      "status": "review_required",
-      "decision": "ai_review",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": true
-    }
-  },
-  {
-    "id": "FB-2025-106",
-    "scenario": "Expired contract \u2014 bill date (2025-03-20) falls after the only contract with this carrier (CC-2023-TCI-001) expired (2024-06-30). A newer contract exists (CC-2024-TCI-002) with different pricing/units.",
-    "result": {
-      "status": "review_required",
-      "decision": "ai_review",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": true
-    }
-  },
-  {
-    "id": "FB-2025-107",
-    "scenario": "Unit of measure mismatch \u2014 contract is per FTL (\u20b948,000/FTL, 1 FTL = 8000 kg capacity). Bill is per-kg (7800 kg \u00d7 \u20b96.50/kg). Semantically valid alternate billing but requires unit reconciliation.",
-    "result": {
-      "status": "approved",
-      "decision": "ai_approved",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": false
-    }
-  },
-  {
-    "id": "FB-2025-108",
-    "scenario": "Contract revision \u2014 bill date (2024-11-20) falls after fuel surcharge revision date (2024-10-01). Must use revised fuel surcharge (18%), not original (12%). Bill correctly uses revised rate \u2014 should pass if agent handles contract revisions.",
-    "result": {
-      "status": "approved",
-      "decision": "ai_approved",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": false
-    }
-  },
-  {
-    "id": "FB-2025-109",
-    "scenario": "Duplicate bill \u2014 same bill number and carrier as FB-2025-101, re-submitted. Must detect and reject/flag.",
-    "result": {
-      "status": "review_required",
-      "decision": "ai_review",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": true
-    }
-  },
-  {
-    "id": "FB-2025-110",
-    "scenario": "Unknown carrier \u2014 'Gati KWE' has no carrier record, no contract. Spot carrier used for emergency shipment. Must escalate to human review.",
-    "result": {
-      "status": "review_required",
-      "decision": "ai_review",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": true
-    }
-  },
-  {
-    "id": "FB-2025-110",
-    "scenario": "Unknown carrier \u2014 'Gati KWE' has no carrier record, no contract. Spot carrier used for emergency shipment. Must escalate to human review.",
+    "id": "FB-TEST-WRONG-FUEL",
+    "scenario": "Correct shipment and base charge, but wrong fuel surcharge. Contract expects 8%, bill uses 10%. Should flag or dispute.",
+    "explanation": "The freight bill FB-TEST-WRONG-FUEL for shipment SHP-2025-002 on lane DEL-BLR with carrier Safexpress Logistics matches the contract CC-2024-SFX-001 and rate rule CC-2024-SFX-001::DEL-BLR with billed weight 850 kg and rate 15.0 per kg yielding base charge 850 * 15.0 = 12750.0 as expected. The fuel surcharge is billed as 1275.0 but expected 1020.0 = 12750 * 8% (fuel surcharge percent 8%). GST billed is 2524.5 but expected 2478.6 = (12750 + 1020) * 18%. Total amount billed is 16549.5 but expected 16248.6 = 12750 + 1020 + 2478.6. Deterministic rule checks failed on weight_check (total billed weight 3450 > shipment weight 850) and amount_check (fuel surcharge, GST, and total mismatch). Due to these fails, review is required. There are no duplicates and the carrier and shipment are valid. Exact contract found by shipment date. Review reasons: weight check failed due to total billed weight exceeding shipment weight, amount check failed due to billed fuel surcharge and GST mismatch with contract rate rule calculations.",
     "result": {
       "status": "review_required",
       "decision": "ai_review",
@@ -277,12 +32,13 @@
       "status": "match",
       "matches": true,
       "confidence": 0.95,
-      "reason": "Agent explanation and decision correctly identify unknown carrier and lack of contract, requiring human review as per scenario."
+      "reason": "Agent identified the wrong fuel surcharge percentage and flagged the invoice for review, aligning with the scenario intent."
     }
   },
   {
-    "id": "FB-2025-101",
-    "scenario": "Clean match \u2014 freight bill references shipment, weight and charges match exactly. Should auto-approve.",
+    "id": "FB-TEST-BASE-1",
+    "scenario": "Baseline clean bill \u2014 should auto-approve. Used as the original bill for duplicate tests.",
+    "explanation": "The freight bill FB-TEST-BASE-1 for shipment SHP-2025-002 on lane DEL-BLR with rated weight 850 kg billed at 15.0 per kg matches the selected contract CC-2024-SFX-001 (effective 2024-01-01 to 2025-12-31) rate rule CC-2024-SFX-001::DEL-BLR. The base charge is 850 * 15 = 12750.0 matching the billed base_charge. Fuel surcharge used is 8% as per rate rule (no revised fuel percent; bill date 2025-02-15 is after effective date), so 12750 * 8/100 = 1020.0 matches actual fuel surcharge. GST is calculated as (12750 + 1020) * 0.18 = 2478.6 expected vs 2479.0 actual (minor rounding difference). Total amount is 12750 + 1020 + 2478.6 = 16248.6 expected vs 16249.0 actual (rounding difference). All deterministic rule checks pass (duplicate_check, carrier_check, shipment_check, rate_check, weight_check, amount_check). Shipment and BOL weights match exactly 850 kg. No duplicates found. Carrier is active and linked. Hence, approved confidently.",
     "result": {
       "status": "approved",
       "decision": "ai_approved",
@@ -294,29 +50,13 @@
       "status": "match",
       "matches": true,
       "confidence": 0.95,
-      "reason": "Agent explanation confirms exact matches on shipment, weight, charges; final decision auto-approved as scenario requires."
+      "reason": "Scenario requests auto-approval of a clean baseline bill; agent approved with detailed matching validation."
     }
   },
   {
-    "id": "FB-2025-102",
-    "scenario": "Ambiguous \u2014 carrier has 3 overlapping contracts covering DEL-BOM lane at different rates. No shipment reference. Agent must choose which contract applies.",
-    "result": {
-      "status": "approved",
-      "decision": "ai_approved",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": false
-    },
-    "scenario_check": {
-      "status": "match",
-      "matches": true,
-      "confidence": 0.95,
-      "reason": "Agent correctly identified and applied the appropriate contract among overlapping ones and approved the bill accordingly."
-    }
-  },
-  {
-    "id": "FB-2025-103",
-    "scenario": "Partial delivery \u2014 shipment was for 2000 kg, first BOL delivered 1200 kg, this bill covers remaining 800 kg on a second truck. Agent must trace prior freight bills.",
+    "id": "FB-TEST-DUP-1",
+    "scenario": "Triple duplicate \u2014 same carrier and same bill number as FB-TEST-BASE-1. Should be detected as duplicate even though bill_date differs.",
+    "explanation": "Duplicate check failed with duplicates FB-TEST-BASE-1 (approved) and FB-TEST-DUP-CHANGED-AMOUNT (not processed). No selected rate rule with fuel surcharge percent available for direct math validation. Bill FB-TEST-DUP-1 base_charge 12750.0 + fuel_surcharge 1020.0 + gst_amount 2479.0 totals 16249.0 matching billed total, but lacking rate rule means no definitive charge math. Duplicate status fail triggers review_required as per policy.",
     "result": {
       "status": "review_required",
       "decision": "ai_review",
@@ -328,29 +68,13 @@
       "status": "match",
       "matches": true,
       "confidence": 0.9,
-      "reason": "Agent verified partial delivery quantities and matched bill to one valid contract but flagged review due to multiple active contracts, fitting scenario intent."
+      "reason": "Agent correctly identified the triple duplicate despite differing bill_date and set status to review as required."
     }
   },
   {
-    "id": "FB-2025-104",
-    "scenario": "OVER-BILLING \u2014 BOL confirms 1200 kg delivered on first truck, but this bill claims 1500 kg at the same per-kg rate. Previous bill (FB-2025-103) already billed 800 kg for remaining load. Net over-billing vs actual delivery. Classic case the system must catch.",
-    "result": {
-      "status": "review_required",
-      "decision": "ai_review",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": true
-    },
-    "scenario_check": {
-      "status": "match",
-      "matches": true,
-      "confidence": 0.9,
-      "reason": "Agent flagged contract ambiguity and requested review due to weight discrepancies and overlapping contracts, matching scenario intent to catch over-billing."
-    }
-  },
-  {
-    "id": "FB-2025-105",
-    "scenario": "Rate drift \u2014 billed rate (\u20b98.70/kg) is ~8.75% above the contracted rate (\u20b98.00/kg). Small enough to miss, large enough to matter. Should flag.",
+    "id": "FB-TEST-DUP-CHANGED-AMOUNT",
+    "scenario": "Duplicate with changed amount \u2014 same carrier and bill number as existing bill, but changed billed weight and amount. Should be treated as duplicate and suspicious amendment.",
+    "explanation": "The duplicate_check rule has status fail due to the presence of a duplicate freight bill (ID FB-TEST-BASE-1) with a lower base charge (12750.0) and total amount (16249.0) than the current bill (base charge 13500.0, total 17204.4). No rate rule or contract candidate is found to explain the bill's charge math, and no shipment or BOL evidence exists. The absence of a selected rate rule with fuel surcharge percent means charge math validation cannot be performed. Due to the failed duplicate check, the bill requires manual review to determine the validity of the reported amount difference and billing accuracy.",
     "result": {
       "status": "review_required",
       "decision": "ai_review",
@@ -362,12 +86,31 @@
       "status": "match",
       "matches": true,
       "confidence": 0.95,
-      "reason": "Agent correctly identified rate drift above contract rate and flagged for review as scenario intends."
+      "reason": "Agent correctly identified duplicate with changed amount and flagged for manual review as suspicious amendment."
     }
   },
   {
-    "id": "FB-2025-106",
-    "scenario": "Expired contract \u2014 bill date (2025-03-20) falls after the only contract with this carrier (CC-2023-TCI-001) expired (2024-06-30). A newer contract exists (CC-2024-TCI-002) with different pricing/units.",
+    "id": "FB-TEST-SAME-NUM-DIFF-CARRIER",
+    "scenario": "Same bill number but different carrier \u2014 should not be treated as duplicate if duplicate key is carrier_id plus bill_number.",
+    "explanation": "All deterministic rule checks passed: duplicate_check=pass, carrier_check=pass, shipment_check=pass, rate_check=pass, weight_check=pass, amount_check=pass. Selected contract CC-2024-DEL-001 (effective 2024-04-01 to 2025-03-31) with rate rule CC-2024-DEL-001::BLR-CHN applied for shipment SHP-2025-004 on 2025-01-25. Billed weight 1200 kg matches shipment weight 1200 kg and BOL actual_weight_kg 1200. Rate per kg 8.0 matches rate rule rate_per_kg 8.0. Fuel surcharge percent 7% from rate rule used (no revised fuel surcharge or revised_on date). Base charge calculated as 1200 kg * 8.0 = 9600.0 matches billed base charge. Fuel surcharge calculated as 9600.0 * 7 / 100 = 672.0 matches billed fuel surcharge. GST calculated as (9600.0 + 672.0) * 0.18 = 1848.96 matches billed GST. Total amount 9600.0 + 672.0 + 1848.96 = 12120.96 matches billed total. Carrier 'Delhivery Freight' is linked and active. No duplicates found. Thus, the freight bill is fully explained and verified by contract, shipment, BOL, rates, and amounts consistency.",
+    "result": {
+      "status": "approved",
+      "decision": "ai_approved",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": false
+    },
+    "scenario_check": {
+      "status": "match",
+      "matches": true,
+      "confidence": 0.95,
+      "reason": "Agent verified no duplicates found despite same bill number, correctly considering carrier_id in duplicate check as scenario requires."
+    }
+  },
+  {
+    "id": "FB-TEST-WRONG-LANE",
+    "scenario": "Shipment reference points to DEL-BLR shipment, but bill claims DEL-BOM lane. Should fail route/lane validation.",
+    "explanation": "The bill FB-TEST-WRONG-LANE has shipment reference SHP-2025-002 with billed weight 850kg and billed rate 15.0. The selected contract CC-2024-SFX-001 has lane DEL-BOM, rate 12.5 per kg, and fuel surcharge percent 8. The charge math: base_charge = 850kg * 15.0 = 12750.0 (matches billed base charge); fuel_surcharge = 12750.0 * 8% = 1020.0 (matches billed fuel); GST = (12750.0 + 1020.0) * 18% = 2478.6 expected vs 2479.0 actual; total = 12750.0 + 1020.0 + 2478.6 = 16248.6 expected vs 16249.0 actual. However, the billed rate 15.0 does not match the allowed rate 12.5 per kg from the selected contract rate rule, failing rate_check. Additionally, total billed weight 4300kg exceeds shipment weight 850kg, failing weight_check. There is no duplicate freight bill. Two active contracts exist for the shipment date lane DEL-BOM, causing contract ambiguity. Because of multiple active contracts and failed deterministic rule checks (rate and weight), review is required.",
     "result": {
       "status": "review_required",
       "decision": "ai_review",
@@ -379,25 +122,7 @@
       "status": "match",
       "matches": true,
       "confidence": 0.9,
-      "reason": "Agent recognized billing after expired contract and differences in new contract rates, requiring review as scenario intended."
-    }
-  },
-  {
-    "id": "FB-2025-106",
-    "scenario": "Expired contract \u2014 bill date (2025-03-20) falls after the only contract with this carrier (CC-2023-TCI-001) expired (2024-06-30). A newer contract exists (CC-2024-TCI-002) with different pricing/units.",
-    "explanation": "The freight bill FB-2025-106 for carrier TCI Express (CAR003) with no shipment reference is evaluated as a contract-only invoice. The selected contract CC-2024-TCI-002 (effective 2024-07-01 to 2025-06-30) and rate rule CC-2024-TCI-002::BOM-AHM (lane BOM-AHM) was applied. The billed weight is 4500 kg. The billed rate was 7.5 per kg but the contract rate rule allowed rate is only 6.5 per kg, causing the rate check to fail. Base charge computed as 4500 kg * 7.5 = 33750.0 (matches billed). Fuel surcharge is 6% of base charge = 2025.0 (matches billed). GST is 18% of (33750 + 2025) = 6439.5 (matches billed). Total charge is 33750 + 2025 + 6439.5 = 42214.5 (matches billed). Despite the arithmetic correctness, the billed rate rule mismatch triggers the rate_check failure. Duplicate check passed with no duplicates. No shipment references or BOL evidence apply. Therefore, approval is not possible and review is required due to failed rate_check.",
-    "result": {
-      "status": "review_required",
-      "decision": "ai_review",
-      "decision_mode": "ai",
-      "decision_source": "ai",
-      "awaiting_review": true
-    },
-    "scenario_check": {
-      "status": "match",
-      "matches": true,
-      "confidence": 0.95,
-      "reason": "Agent identified contract mismatch and rate_check failure, requiring review as scenario of expired contract implies."
+      "reason": "Agent correctly identified lane mismatch and related contract ambiguity, leading to review as per scenario intent."
     }
   }
 ]
