@@ -51,14 +51,53 @@ ORDER BY length(path), labels(target), target.id
 """
 
 
+LOAD_CURRENT_FREIGHT_BILL_QUERY = """
+MATCH (fb:FreightBill {id: $freight_bill_id})
+RETURN fb
+"""
+
+
 DUPLICATE_BILLS_QUERY = """
 MATCH (fb:FreightBill {id: $freight_bill_id})
-MATCH (dup:FreightBill)
+OPTIONAL MATCH (dup:FreightBill)
 WHERE dup.id <> fb.id
   AND dup.carrier_id = fb.carrier_id
   AND dup.bill_number = fb.bill_number
-RETURN dup
-ORDER BY dup.id
+RETURN collect(DISTINCT dup) AS duplicate_bills
+"""
+
+
+BILLED_CARRIER_QUERY = """
+MATCH (fb:FreightBill {id: $freight_bill_id})
+OPTIONAL MATCH (fb)-[:BILLED_BY]->(carrier:Carrier)
+RETURN carrier
+"""
+
+
+CARRIER_BY_EXACT_NAME_QUERY = """
+MATCH (fb:FreightBill {id: $freight_bill_id})
+MATCH (carrier:Carrier)
+WHERE toLower(carrier.name) = toLower(fb.carrier_name)
+RETURN carrier
+ORDER BY carrier.id
+"""
+
+
+CARRIER_BY_LOOSE_NAME_QUERY = """
+MATCH (fb:FreightBill {id: $freight_bill_id})
+MATCH (carrier:Carrier)
+WHERE toLower(carrier.name) CONTAINS toLower(split(fb.carrier_name, " ")[0])
+RETURN carrier
+ORDER BY carrier.id
+"""
+
+
+EXACT_SHIPMENT_CANDIDATE_QUERY = """
+MATCH (fb:FreightBill {id: $freight_bill_id})
+OPTIONAL MATCH (fb)-[:CLAIMS_SHIPMENT]->(shipment:Shipment)
+OPTIONAL MATCH (shipment)-[:SHIPPED_BY]->(shipment_carrier:Carrier)
+OPTIONAL MATCH (shipment)-[:ON_LANE]->(shipment_lane:Lane)
+RETURN shipment, shipment_carrier, shipment_lane
 """
 
 
@@ -108,14 +147,39 @@ MATCH (fb)-[:BILLED_BY]->(carrier:Carrier)
 MATCH (shipment:Shipment)-[:SHIPPED_BY]->(carrier)
 MATCH (shipment)-[:ON_LANE]->(lane:Lane)
 WHERE lane.code = fb.lane
-  AND shipment.shipment_date <= fb.bill_date
-  AND shipment.shipment_date >= fb.bill_date - duration({days: $window_days})
 RETURN
   shipment,
   carrier,
   lane,
   abs(shipment.total_weight_kg - fb.billed_weight_kg) AS weight_diff
 ORDER BY weight_diff ASC, shipment.shipment_date DESC, shipment.id
+"""
+
+
+CLAIMED_SHIPMENT_BOLS_QUERY = """
+MATCH (fb:FreightBill {id: $freight_bill_id})
+MATCH (fb)-[:CLAIMS_SHIPMENT]->(shipment:Shipment)
+OPTIONAL MATCH (shipment)-[:HAS_BOL]->(bol:BOL)
+RETURN shipment, collect(DISTINCT bol) AS bols
+"""
+
+
+CANDIDATE_SHIPMENT_BOLS_QUERY = """
+MATCH (shipment:Shipment {id: $shipment_id})
+OPTIONAL MATCH (shipment)-[:HAS_BOL]->(bol:BOL)
+RETURN shipment, collect(DISTINCT bol) AS bols
+"""
+
+
+PREVIOUS_BILLS_FOR_SAME_SHIPMENT_QUERY = """
+MATCH (fb:FreightBill {id: $freight_bill_id})
+MATCH (fb)-[:CLAIMS_SHIPMENT]->(shipment:Shipment)
+OPTIONAL MATCH (other:FreightBill)-[:CLAIMS_SHIPMENT]->(shipment)
+WHERE other.id <> fb.id
+RETURN
+  shipment,
+  collect(DISTINCT other) AS previous_bills,
+  sum(other.billed_weight_kg) AS previous_billed_weight
 """
 
 
@@ -129,4 +193,32 @@ WHERE lane.code = fb.lane
   AND contract.expiry_date >= fb.bill_date
 RETURN contract, rr, lane
 ORDER BY contract.effective_date DESC, contract.id
+"""
+
+
+CONTRACT_CANDIDATES_BY_SHIPMENT_DATE_QUERY = """
+MATCH (fb:FreightBill {id: $freight_bill_id})
+MATCH (fb)-[:CLAIMS_SHIPMENT]->(shipment:Shipment)
+MATCH (shipment)-[:SHIPPED_BY]->(carrier:Carrier)
+MATCH (carrier)-[:HAS_CONTRACT]->(contract:Contract)
+MATCH (contract)-[:HAS_RATE_RULE]->(rate_rule:RateRule)-[:FOR_LANE]->(lane:Lane)
+WHERE lane.code = fb.lane
+  AND contract.effective_date <= shipment.shipment_date
+  AND contract.expiry_date >= shipment.shipment_date
+RETURN
+  shipment,
+  contract,
+  rate_rule,
+  lane
+ORDER BY contract.effective_date DESC, contract.id
+"""
+
+
+SHIPMENT_CONTRACT_RATE_RULE_QUERY = """
+MATCH (fb:FreightBill {id: $freight_bill_id})
+MATCH (fb)-[:CLAIMS_SHIPMENT]->(shipment:Shipment)
+OPTIONAL MATCH (shipment)-[:UNDER_CONTRACT]->(contract:Contract)
+OPTIONAL MATCH (contract)-[:HAS_RATE_RULE]->(rate_rule:RateRule)-[:FOR_LANE]->(lane:Lane)
+WHERE lane.code = fb.lane
+RETURN shipment, contract, rate_rule, lane
 """

@@ -3,12 +3,22 @@ from typing import Any, Dict, List, Optional
 from neo4j import GraphDatabase
 
 from .queries import (
+    BILLED_CARRIER_QUERY,
     BFS_TO_EVIDENCE_TARGETS_QUERY,
+    CANDIDATE_SHIPMENT_BOLS_QUERY,
+    CARRIER_BY_EXACT_NAME_QUERY,
+    CARRIER_BY_LOOSE_NAME_QUERY,
     CONTRACT_CANDIDATES_QUERY,
+    CONTRACT_CANDIDATES_BY_SHIPMENT_DATE_QUERY,
     CUMULATIVE_BILLING_FOR_SHIPMENT_QUERY,
     DUPLICATE_BILLS_QUERY,
+    EXACT_SHIPMENT_CANDIDATE_QUERY,
+    LOAD_CURRENT_FREIGHT_BILL_QUERY,
     OTHER_BILLS_FOR_SAME_SHIPMENT_QUERY,
+    PREVIOUS_BILLS_FOR_SAME_SHIPMENT_QUERY,
     REVISED_RATE_RULE_QUERY,
+    CLAIMED_SHIPMENT_BOLS_QUERY,
+    SHIPMENT_CONTRACT_RATE_RULE_QUERY,
     TRACE_HAPPY_PATH_QUERY,
     TRACE_HAPPY_PATHS,
     WEAK_SHIPMENT_CANDIDATES_QUERY,
@@ -102,14 +112,73 @@ class EvidenceService:
             ],
         }
 
+    def get_current_freight_bill(self, freight_bill_id: str) -> Dict[str, Any]:
+        record = self._read_single_record(LOAD_CURRENT_FREIGHT_BILL_QUERY, freight_bill_id)
+
+        return {
+            "freight_bill_id": freight_bill_id,
+            "found": record is not None,
+            "freight_bill": node_to_dict(record["fb"]) if record else None,
+        }
+
     def find_duplicate_bills(self, freight_bill_id: str) -> Dict[str, Any]:
-        records = self._read_records(DUPLICATE_BILLS_QUERY, freight_bill_id)
-        duplicates = [node_to_dict(record["dup"]) for record in records]
+        record = self._read_single_record(DUPLICATE_BILLS_QUERY, freight_bill_id)
+        duplicates = [] if record is None else [
+            node_to_dict(duplicate)
+            for duplicate in record["duplicate_bills"]
+            if duplicate is not None
+        ]
 
         return {
             "freight_bill_id": freight_bill_id,
             "duplicates_found": len(duplicates),
             "duplicates": duplicates,
+        }
+
+    def get_billed_carrier(self, freight_bill_id: str) -> Dict[str, Any]:
+        record = self._read_single_record(BILLED_CARRIER_QUERY, freight_bill_id)
+
+        return {
+            "freight_bill_id": freight_bill_id,
+            "carrier": node_to_dict(record["carrier"]) if record else None,
+        }
+
+    def find_carriers_by_exact_name(self, freight_bill_id: str) -> Dict[str, Any]:
+        records = self._read_records(CARRIER_BY_EXACT_NAME_QUERY, freight_bill_id)
+        carriers = [node_to_dict(record["carrier"]) for record in records]
+
+        return {
+            "freight_bill_id": freight_bill_id,
+            "carriers_found": len(carriers),
+            "carriers": carriers,
+        }
+
+    def find_carriers_by_loose_name(self, freight_bill_id: str) -> Dict[str, Any]:
+        records = self._read_records(CARRIER_BY_LOOSE_NAME_QUERY, freight_bill_id)
+        carriers = [node_to_dict(record["carrier"]) for record in records]
+
+        return {
+            "freight_bill_id": freight_bill_id,
+            "carriers_found": len(carriers),
+            "carriers": carriers,
+        }
+
+    def get_exact_shipment_candidate(self, freight_bill_id: str) -> Dict[str, Any]:
+        record = self._read_single_record(EXACT_SHIPMENT_CANDIDATE_QUERY, freight_bill_id)
+
+        if record is None:
+            return {
+                "freight_bill_id": freight_bill_id,
+                "shipment": None,
+                "shipment_carrier": None,
+                "shipment_lane": None,
+            }
+
+        return {
+            "freight_bill_id": freight_bill_id,
+            "shipment": node_to_dict(record["shipment"]),
+            "shipment_carrier": node_to_dict(record["shipment_carrier"]),
+            "shipment_lane": node_to_dict(record["shipment_lane"]),
         }
 
     def find_other_bills_for_same_shipment(self, freight_bill_id: str) -> Dict[str, Any]:
@@ -176,17 +245,14 @@ class EvidenceService:
     def find_weak_shipment_candidates(
         self,
         freight_bill_id: str,
-        window_days: int = 90,
     ) -> Dict[str, Any]:
         records = self._read_records(
             WEAK_SHIPMENT_CANDIDATES_QUERY,
             freight_bill_id,
-            window_days=window_days,
         )
 
         return {
             "freight_bill_id": freight_bill_id,
-            "window_days": window_days,
             "candidates_found": len(records),
             "candidates": [
                 {
@@ -197,6 +263,53 @@ class EvidenceService:
                 }
                 for record in records
             ],
+        }
+
+    def get_bols_for_claimed_shipment(self, freight_bill_id: str) -> Dict[str, Any]:
+        record = self._read_single_record(CLAIMED_SHIPMENT_BOLS_QUERY, freight_bill_id)
+        return self._bols_result(freight_bill_id, record)
+
+    def get_bols_for_shipment(self, shipment_id: str) -> Dict[str, Any]:
+        with self.driver.session() as session:
+            record = session.execute_read(
+                lambda tx: tx.run(
+                    CANDIDATE_SHIPMENT_BOLS_QUERY,
+                    shipment_id=shipment_id,
+                ).single()
+            )
+
+        return self._bols_result(shipment_id, record, id_key="shipment_id")
+
+    def get_previous_bills_for_same_shipment(
+        self,
+        freight_bill_id: str,
+    ) -> Dict[str, Any]:
+        record = self._read_single_record(
+            PREVIOUS_BILLS_FOR_SAME_SHIPMENT_QUERY,
+            freight_bill_id,
+        )
+
+        if record is None:
+            return {
+                "freight_bill_id": freight_bill_id,
+                "found": False,
+                "shipment": None,
+                "previous_bills": [],
+                "previous_billed_weight": 0,
+            }
+
+        previous_bills = [
+            node_to_dict(previous_bill)
+            for previous_bill in record["previous_bills"]
+            if previous_bill is not None
+        ]
+
+        return {
+            "freight_bill_id": freight_bill_id,
+            "found": True,
+            "shipment": node_to_dict(record["shipment"]),
+            "previous_bills": previous_bills,
+            "previous_billed_weight": record["previous_billed_weight"] or 0,
         }
 
     def find_contract_candidates(self, freight_bill_id: str) -> Dict[str, Any]:
@@ -214,6 +327,55 @@ class EvidenceService:
                 }
                 for record in records
             ],
+        }
+
+    def find_contract_candidates_by_shipment_date(
+        self,
+        freight_bill_id: str,
+    ) -> Dict[str, Any]:
+        records = self._read_records(
+            CONTRACT_CANDIDATES_BY_SHIPMENT_DATE_QUERY,
+            freight_bill_id,
+        )
+
+        return {
+            "freight_bill_id": freight_bill_id,
+            "candidates_found": len(records),
+            "requires_review": len(records) > 1,
+            "candidates": [
+                {
+                    "shipment": node_to_dict(record["shipment"]),
+                    "contract": node_to_dict(record["contract"]),
+                    "rate_rule": node_to_dict(record["rate_rule"]),
+                    "lane": node_to_dict(record["lane"]),
+                }
+                for record in records
+            ],
+        }
+
+    def get_shipment_contract_rate_rule(self, freight_bill_id: str) -> Dict[str, Any]:
+        record = self._read_single_record(
+            SHIPMENT_CONTRACT_RATE_RULE_QUERY,
+            freight_bill_id,
+        )
+
+        if record is None:
+            return {
+                "freight_bill_id": freight_bill_id,
+                "found": False,
+                "shipment": None,
+                "contract": None,
+                "rate_rule": None,
+                "lane": None,
+            }
+
+        return {
+            "freight_bill_id": freight_bill_id,
+            "found": record["shipment"] is not None,
+            "shipment": node_to_dict(record["shipment"]),
+            "contract": node_to_dict(record["contract"]),
+            "rate_rule": node_to_dict(record["rate_rule"]),
+            "lane": node_to_dict(record["lane"]),
         }
 
     def _read_records(
@@ -253,4 +415,25 @@ class EvidenceService:
         return {
             key: serialize_neo4j_value(record[key])
             for key in record.keys()
+        }
+
+    @staticmethod
+    def _bols_result(id_value: str, record: Optional[Any], id_key: str = "freight_bill_id") -> Dict[str, Any]:
+        if record is None:
+            return {
+                id_key: id_value,
+                "found": False,
+                "shipment": None,
+                "bols": [],
+            }
+
+        return {
+            id_key: id_value,
+            "found": record["shipment"] is not None,
+            "shipment": node_to_dict(record["shipment"]),
+            "bols": [
+                node_to_dict(bol)
+                for bol in record["bols"]
+                if bol is not None
+            ],
         }
