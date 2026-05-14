@@ -5,6 +5,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 
+from services.agent.decisions import AiDecisionEngine
 from services.agent.explanations import ExplanationBuilder
 from services.evidence.evidence_service import EvidenceService
 from services.rules import RuleEngine
@@ -18,6 +19,8 @@ class AgentState(TypedDict, total=False):
     checks: List[Dict[str, Any]]
     status: str
     decision: str
+    decision_mode: str
+    decision_source: str
     confidence: float
     explanation: str
     awaiting_review: bool
@@ -30,6 +33,7 @@ class FreightAgent:
         store: PostgresStore,
         evidence_service: Optional[EvidenceService] = None,
         rule_engine: Optional[RuleEngine] = None,
+        ai_decider: Optional[AiDecisionEngine] = None,
     ):
         self.store = store
         self.evidence_service = evidence_service or EvidenceService(
@@ -38,17 +42,24 @@ class FreightAgent:
             password=os.getenv("NEO4J_PASSWORD", "password"),
         )
         self.rule_engine = rule_engine or RuleEngine()
+        self.ai_decider = ai_decider or AiDecisionEngine()
         self.explanations = ExplanationBuilder()
         self.graph = self._build_graph()
 
     def close(self) -> None:
         self.evidence_service.close()
 
-    def run(self, freight_bill_id: str, freight_bill: Dict[str, Any]) -> Dict[str, Any]:
+    def run(
+        self,
+        freight_bill_id: str,
+        freight_bill: Dict[str, Any],
+        decision_mode: Optional[str] = None,
+    ) -> Dict[str, Any]:
         result = self.graph.invoke(
             {
                 "freight_bill_id": freight_bill_id,
                 "freight_bill": freight_bill,
+                "decision_mode": self._decision_mode(decision_mode),
             },
             self._config(freight_bill_id),
         )
@@ -76,14 +87,30 @@ class FreightAgent:
         graph.add_node("collect_evidence", self._collect_evidence)
         graph.add_node("run_rules", self._run_rules)
         graph.add_node("decide", self._decide)
+        graph.add_node("ai_decide", self._ai_decide)
         graph.add_node("human_review", self._human_review)
         graph.add_node("apply_review", self._apply_review)
 
         graph.add_edge(START, "collect_evidence")
         graph.add_edge("collect_evidence", "run_rules")
-        graph.add_edge("run_rules", "decide")
+        graph.add_conditional_edges(
+            "run_rules",
+            self._route_decider,
+            {
+                "rules": "decide",
+                "ai": "ai_decide",
+            },
+        )
         graph.add_conditional_edges(
             "decide",
+            self._route_after_decision,
+            {
+                "review": "human_review",
+                "done": END,
+            },
+        )
+        graph.add_conditional_edges(
+            "ai_decide",
             self._route_after_decision,
             {
                 "review": "human_review",
@@ -113,10 +140,28 @@ class FreightAgent:
         return {
             "status": status,
             "decision": decision,
+            "decision_source": "rules",
             "confidence": confidence,
             "explanation": explanation,
             "awaiting_review": status == "review_required",
         }
+
+    def _ai_decide(self, state: AgentState) -> AgentState:
+        try:
+            decision = self.ai_decider.decide(
+                freight_bill=state["freight_bill"],
+                evidence=state["evidence"],
+                checks=state["checks"],
+            )
+            return decision.to_agent_update(decision_source="ai")
+        except Exception as exc:
+            fallback = self._decide(state)
+            fallback["decision_source"] = "rules_fallback"
+            fallback["explanation"] = (
+                f"AI decision unavailable: {exc}. "
+                f"Fallback used. {fallback['explanation']}"
+            )
+            return fallback
 
     def _human_review(self, state: AgentState) -> AgentState:
         review = interrupt(
@@ -143,10 +188,15 @@ class FreightAgent:
         return {
             "status": status,
             "decision": decision,
+            "decision_source": "reviewer",
             "confidence": 1.0,
             "awaiting_review": False,
             "explanation": f"Reviewer selected {reviewer_decision}.{suffix}",
         }
+
+    @staticmethod
+    def _route_decider(state: AgentState) -> Literal["rules", "ai"]:
+        return "ai" if state.get("decision_mode") == "ai" else "rules"
 
     @staticmethod
     def _route_after_decision(state: AgentState) -> Literal["review", "done"]:
@@ -184,10 +234,16 @@ class FreightAgent:
             "checks": current["checks"],
             "status": status,
             "decision": decision,
+            "decision_source": "reviewer",
             "confidence": 1.0,
             "awaiting_review": False,
             "explanation": f"Reviewer selected {review['decision']} from persisted review state.{suffix}",
         }
+
+    @staticmethod
+    def _decision_mode(decision_mode: Optional[str]) -> str:
+        value = decision_mode or os.getenv("FREIGHT_AGENT_DECIDER", "rules")
+        return "ai" if value == "ai" else "rules"
 
     @staticmethod
     def _status_for_review_decision(reviewer_decision: str) -> tuple[str, str]:

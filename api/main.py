@@ -11,6 +11,10 @@ from services.storage import PostgresStore
 
 class IngestFreightBillRequest(BaseModel):
     id: str = Field(..., description="Freight bill id from the seed data, e.g. FB-2025-101")
+    decision_mode: Optional[Literal["rules", "ai"]] = Field(
+        default=None,
+        description="Optional decision node override. Defaults to FREIGHT_AGENT_DECIDER or rules.",
+    )
 
 
 class ReviewRequest(BaseModel):
@@ -59,7 +63,7 @@ def ingest_freight_bill(request: Request, payload: IngestFreightBillRequest) -> 
 
     store.upsert_ingested_bill(freight_bill)
     try:
-        return agent.run(payload.id, freight_bill)
+        return agent.run(payload.id, freight_bill, decision_mode=payload.decision_mode)
     except Exception as exc:
         return store.mark_error(payload.id, str(exc))
 

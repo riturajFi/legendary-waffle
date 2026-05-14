@@ -19,6 +19,8 @@ class PostgresStore:
                     payload JSONB NOT NULL,
                     status TEXT NOT NULL,
                     decision TEXT,
+                    decision_mode TEXT,
+                    decision_source TEXT,
                     confidence DOUBLE PRECISION,
                     explanation TEXT,
                     checks JSONB NOT NULL DEFAULT '[]'::jsonb,
@@ -29,6 +31,12 @@ class PostgresStore:
                     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
                 )
                 """
+            )
+            conn.execute(
+                "ALTER TABLE freight_bills ADD COLUMN IF NOT EXISTS decision_source TEXT"
+            )
+            conn.execute(
+                "ALTER TABLE freight_bills ADD COLUMN IF NOT EXISTS decision_mode TEXT"
             )
             conn.execute(
                 """
@@ -71,6 +79,8 @@ class PostgresStore:
                     payload,
                     status,
                     decision,
+                    decision_mode,
+                    decision_source,
                     confidence,
                     explanation,
                     checks,
@@ -86,6 +96,8 @@ class PostgresStore:
                     NULL,
                     NULL,
                     NULL,
+                    NULL,
+                    NULL,
                     '[]'::jsonb,
                     '{}'::jsonb,
                     FALSE,
@@ -96,6 +108,8 @@ class PostgresStore:
                     payload = EXCLUDED.payload,
                     status = 'received',
                     decision = NULL,
+                    decision_mode = NULL,
+                    decision_source = NULL,
                     confidence = NULL,
                     explanation = NULL,
                     checks = '[]'::jsonb,
@@ -122,6 +136,8 @@ class PostgresStore:
                 UPDATE freight_bills
                 SET status = %(status)s,
                     decision = %(decision)s,
+                    decision_mode = %(decision_mode)s,
+                    decision_source = %(decision_source)s,
                     confidence = %(confidence)s,
                     explanation = %(explanation)s,
                     checks = %(checks)s,
@@ -135,6 +151,8 @@ class PostgresStore:
                     "id": freight_bill_id,
                     "status": result.get("status", "errored"),
                     "decision": result.get("decision"),
+                    "decision_mode": result.get("decision_mode"),
+                    "decision_source": result.get("decision_source"),
                     "confidence": result.get("confidence"),
                     "explanation": result.get("explanation"),
                     "checks": Jsonb(result.get("checks") or []),
@@ -152,6 +170,8 @@ class PostgresStore:
             {
                 "status": "errored",
                 "decision": "error",
+                "decision_mode": None,
+                "decision_source": "system",
                 "confidence": 0.0,
                 "explanation": message,
                 "checks": [],
@@ -235,6 +255,8 @@ class PostgresStore:
             "freight_bill": row["payload"],
             "status": row["status"],
             "decision": row["decision"],
+            "decision_mode": row.get("decision_mode"),
+            "decision_source": row.get("decision_source"),
             "confidence": row["confidence"],
             "explanation": row["explanation"],
             "checks": row["checks"],

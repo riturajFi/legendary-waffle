@@ -309,6 +309,10 @@ curl -X POST http://127.0.0.1:8000/freight-bills \
   -H 'content-type: application/json' \
   -d '{"id":"FB-2025-102"}'
 
+curl -X POST http://127.0.0.1:8000/freight-bills \
+  -H 'content-type: application/json' \
+  -d '{"id":"FB-2025-102","decision_mode":"ai"}'
+
 curl http://127.0.0.1:8000/freight-bills/FB-2025-102
 curl http://127.0.0.1:8000/review-queue
 
@@ -318,3 +322,5 @@ curl -X POST http://127.0.0.1:8000/review/FB-2025-102 \
 ```
 
 The API persists freight bill state, rule checks, evidence, review decisions, and audit events in Postgres. It uses Neo4j for Carrier/Contract/Lane/Shipment/BOL/FreightBill traversal and LangGraph for the review interrupt/resume path. If `OPENAI_API_KEY` is set, explanations are generated with the configured LLM model; otherwise the deterministic fallback explanation is used.
+
+Decision mode defaults to deterministic rules. Set `FREIGHT_AGENT_DECIDER=ai` or pass `"decision_mode":"ai"` to use the AI decision node. AI decision prompts live under `services/agent/decisions/`, and deterministic `_decide` / `_score` remain available. If `OPENAI_API_KEY` is missing or the AI response is invalid, the agent records `decision_source=rules_fallback`.
