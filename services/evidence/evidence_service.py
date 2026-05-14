@@ -21,6 +21,7 @@ from .queries import (
     SHIPMENT_CONTRACT_RATE_RULE_QUERY,
     TRACE_HAPPY_PATH_QUERY,
     TRACE_HAPPY_PATHS,
+    UPDATE_FREIGHT_BILL_QUERY,
     WEAK_SHIPMENT_CANDIDATES_QUERY,
 )
 from .utils import node_to_dict, path_to_dict, serialize_neo4j_value
@@ -120,6 +121,38 @@ class EvidenceService:
             "found": record is not None,
             "freight_bill": node_to_dict(record["fb"]) if record else None,
         }
+
+    def update_freight_bill(self, freight_bill: Dict[str, Any]) -> Dict[str, Any]:
+        lane_origin, lane_destination = self._lane_parts(freight_bill["lane"])
+        params = {
+            "id": freight_bill["id"],
+            "scenario": freight_bill.get("_scenario") or freight_bill.get("scenario"),
+            "carrier_id": freight_bill.get("carrier_id"),
+            "carrier_name": freight_bill.get("carrier_name"),
+            "bill_number": freight_bill.get("bill_number"),
+            "bill_date": freight_bill.get("bill_date"),
+            "shipment_reference": freight_bill.get("shipment_reference"),
+            "lane": freight_bill.get("lane"),
+            "lane_origin": lane_origin,
+            "lane_destination": lane_destination,
+            "billed_weight_kg": freight_bill.get("billed_weight_kg"),
+            "rate_per_kg": freight_bill.get("rate_per_kg"),
+            "billing_unit": freight_bill.get("billing_unit"),
+            "base_charge": freight_bill.get("base_charge"),
+            "fuel_surcharge": freight_bill.get("fuel_surcharge"),
+            "gst_amount": freight_bill.get("gst_amount"),
+            "total_amount": freight_bill.get("total_amount"),
+        }
+
+        with self.driver.session() as session:
+            record = session.execute_write(
+                lambda tx: tx.run(UPDATE_FREIGHT_BILL_QUERY, **params).single()
+            )
+
+        if record is None:
+            raise KeyError(freight_bill["id"])
+
+        return node_to_dict(record["fb"])
 
     def find_duplicate_bills(self, freight_bill_id: str) -> Dict[str, Any]:
         record = self._read_single_record(DUPLICATE_BILLS_QUERY, freight_bill_id)
@@ -488,6 +521,11 @@ class EvidenceService:
                     **params,
                 ).single()
             )
+
+    @staticmethod
+    def _lane_parts(lane_code: str) -> tuple[str, str]:
+        parts = lane_code.split("-")
+        return parts[0], "-".join(parts[1:])
 
     @staticmethod
     def _record_to_serializable_dict(record: Any) -> Dict[str, Any]:

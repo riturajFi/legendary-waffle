@@ -189,6 +189,28 @@ class PostgresStore:
 
         return self._public_row(row) if row else None
 
+    def update_freight_bill_payload(
+        self,
+        freight_bill_id: str,
+        freight_bill: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                UPDATE freight_bills
+                SET payload = %(payload)s,
+                    updated_at = now()
+                WHERE id = %(id)s
+                RETURNING *
+                """,
+                {
+                    "id": freight_bill_id,
+                    "payload": Jsonb(freight_bill),
+                },
+            ).fetchone()
+
+        return self._public_row(row)
+
     def list_review_queue(self) -> List[Dict[str, Any]]:
         with self._connect() as conn:
             rows = conn.execute(

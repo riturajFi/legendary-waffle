@@ -57,6 +57,59 @@ RETURN fb
 """
 
 
+UPDATE_FREIGHT_BILL_QUERY = """
+MATCH (fb:FreightBill {id: $id})
+SET fb.scenario = $scenario,
+    fb.carrier_id = $carrier_id,
+    fb.carrier_name = $carrier_name,
+    fb.bill_number = $bill_number,
+    fb.bill_date = date($bill_date),
+    fb.shipment_reference = $shipment_reference,
+    fb.lane = $lane,
+    fb.billed_weight_kg = $billed_weight_kg,
+    fb.rate_per_kg = $rate_per_kg,
+    fb.billing_unit = $billing_unit,
+    fb.base_charge = $base_charge,
+    fb.fuel_surcharge = $fuel_surcharge,
+    fb.gst_amount = $gst_amount,
+    fb.total_amount = $total_amount
+
+WITH fb
+OPTIONAL MATCH (fb)-[carrier_rel:BILLED_BY]->()
+DELETE carrier_rel
+
+WITH fb
+OPTIONAL MATCH (fb)-[lane_rel:CLAIMS_LANE]->()
+DELETE lane_rel
+
+WITH fb
+OPTIONAL MATCH (fb)-[shipment_rel:CLAIMS_SHIPMENT]->()
+DELETE shipment_rel
+
+WITH fb
+OPTIONAL MATCH (carrier:Carrier)
+WHERE $carrier_id IS NOT NULL AND carrier.id = $carrier_id
+FOREACH (_ IN CASE WHEN carrier IS NULL THEN [] ELSE [1] END |
+    MERGE (fb)-[:BILLED_BY]->(carrier)
+)
+
+WITH fb
+MERGE (lane:Lane {code: $lane})
+SET lane.origin = $lane_origin,
+    lane.destination = $lane_destination
+MERGE (fb)-[:CLAIMS_LANE]->(lane)
+
+WITH fb
+OPTIONAL MATCH (shipment:Shipment)
+WHERE $shipment_reference IS NOT NULL AND shipment.id = $shipment_reference
+FOREACH (_ IN CASE WHEN shipment IS NULL THEN [] ELSE [1] END |
+    MERGE (fb)-[:CLAIMS_SHIPMENT]->(shipment)
+)
+
+RETURN fb
+"""
+
+
 DUPLICATE_BILLS_QUERY = """
 MATCH (fb:FreightBill {id: $freight_bill_id})
 OPTIONAL MATCH (dup:FreightBill)

@@ -12,6 +12,35 @@ from services.rules import RuleEngine
 from services.storage import PostgresStore
 
 
+MODIFIABLE_FREIGHT_BILL_FIELDS = {
+    "carrier_id",
+    "carrier_name",
+    "bill_number",
+    "bill_date",
+    "shipment_reference",
+    "lane",
+    "billed_weight_kg",
+    "rate_per_kg",
+    "billing_unit",
+    "base_charge",
+    "fuel_surcharge",
+    "gst_amount",
+    "total_amount",
+}
+
+REQUIRED_FREIGHT_BILL_FIELDS = {
+    "bill_number",
+    "bill_date",
+    "lane",
+    "billed_weight_kg",
+    "rate_per_kg",
+    "base_charge",
+    "fuel_surcharge",
+    "gst_amount",
+    "total_amount",
+}
+
+
 class AgentState(TypedDict, total=False):
     freight_bill_id: str
     freight_bill: Dict[str, Any]
@@ -77,7 +106,9 @@ class FreightAgent:
         try:
             result = self.graph.invoke(Command(resume=review), self._config(freight_bill_id))
             clean_result = self._clean_result(result)
-        except Exception:
+        except Exception as exc:
+            if review.get("decision") == "modify":
+                return self.store.mark_error(freight_bill_id, str(exc))
             clean_result = self._review_result_from_persisted_state(current, review)
 
         return self.store.update_agent_result(freight_bill_id, clean_result)
@@ -90,6 +121,7 @@ class FreightAgent:
         graph.add_node("ai_decide", self._ai_decide)
         graph.add_node("human_review", self._human_review)
         graph.add_node("apply_review", self._apply_review)
+        graph.add_node("apply_modification", self._apply_modification)
 
         graph.add_edge(START, "collect_evidence")
         graph.add_edge("collect_evidence", "run_rules")
@@ -117,8 +149,16 @@ class FreightAgent:
                 "done": END,
             },
         )
-        graph.add_edge("human_review", "apply_review")
+        graph.add_conditional_edges(
+            "human_review",
+            self._route_after_review,
+            {
+                "final": "apply_review",
+                "modify": "apply_modification",
+            },
+        )
         graph.add_edge("apply_review", END)
+        graph.add_edge("apply_modification", "collect_evidence")
 
         return graph.compile(checkpointer=InMemorySaver())
 
@@ -195,6 +235,32 @@ class FreightAgent:
             "explanation": f"Reviewer selected {reviewer_decision}.{suffix}",
         }
 
+    def _apply_modification(self, state: AgentState) -> AgentState:
+        review = state.get("review") or {}
+        modifications = review.get("modifications") or {}
+        modified_bill = self._modified_freight_bill(
+            state["freight_bill_id"],
+            state["freight_bill"],
+            modifications,
+        )
+
+        self.evidence_service.update_freight_bill(modified_bill)
+        self.store.update_freight_bill_payload(state["freight_bill_id"], modified_bill)
+        self.store.add_audit_event(
+            state["freight_bill_id"],
+            "freight_bill_modified_by_reviewer",
+            {
+                "modifications": modifications,
+                "freight_bill": modified_bill,
+                "notes": review.get("notes"),
+            },
+        )
+
+        return {
+            "freight_bill": modified_bill,
+            "awaiting_review": False,
+        }
+
     @staticmethod
     def _route_decider(state: AgentState) -> Literal["rules", "ai"]:
         return "ai" if state.get("decision_mode") == "ai" else "rules"
@@ -202,6 +268,11 @@ class FreightAgent:
     @staticmethod
     def _route_after_decision(state: AgentState) -> Literal["review", "done"]:
         return "review" if state.get("awaiting_review") else "done"
+
+    @staticmethod
+    def _route_after_review(state: AgentState) -> Literal["final", "modify"]:
+        review = state.get("review") or {}
+        return "modify" if review.get("decision") == "modify" else "final"
 
     @staticmethod
     def _score(checks: List[Dict[str, Any]]) -> tuple[str, str, float]:
@@ -283,6 +354,38 @@ class FreightAgent:
             "stored_decision": stored_bill.get("decision"),
             "stored_decision_source": stored_bill.get("decision_source"),
         }
+
+    @staticmethod
+    def _modified_freight_bill(
+        freight_bill_id: str,
+        freight_bill: Dict[str, Any],
+        modifications: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        if not modifications:
+            raise ValueError("modify review requires modifications")
+        if "id" in modifications:
+            raise ValueError("freight bill id cannot be modified")
+
+        unknown_fields = set(modifications) - MODIFIABLE_FREIGHT_BILL_FIELDS
+        if unknown_fields:
+            fields = ", ".join(sorted(unknown_fields))
+            raise ValueError(f"unsupported freight bill modification fields: {fields}")
+
+        modified_bill = {
+            **freight_bill,
+            **modifications,
+            "id": freight_bill_id,
+        }
+        missing_fields = [
+            field
+            for field in sorted(REQUIRED_FREIGHT_BILL_FIELDS)
+            if modified_bill.get(field) is None
+        ]
+        if missing_fields:
+            fields = ", ".join(missing_fields)
+            raise ValueError(f"modified freight bill missing required fields: {fields}")
+
+        return modified_bill
 
     @staticmethod
     def _status_for_review_decision(reviewer_decision: str) -> tuple[str, str]:
