@@ -174,5 +174,161 @@
       "decision_source": "ai",
       "awaiting_review": false
     }
+  },
+  {
+    "id": "FB-2025-103",
+    "scenario": "Partial delivery \u2014 shipment was for 2000 kg, first BOL delivered 1200 kg, this bill covers remaining 800 kg on a second truck. Agent must trace prior freight bills.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    }
+  },
+  {
+    "id": "FB-2025-104",
+    "scenario": "OVER-BILLING \u2014 BOL confirms 1200 kg delivered on first truck, but this bill claims 1500 kg at the same per-kg rate. Previous bill (FB-2025-103) already billed 800 kg for remaining load. Net over-billing vs actual delivery. Classic case the system must catch.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    }
+  },
+  {
+    "id": "FB-2025-105",
+    "scenario": "Rate drift \u2014 billed rate (\u20b98.70/kg) is ~8.75% above the contracted rate (\u20b98.00/kg). Small enough to miss, large enough to matter. Should flag.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    }
+  },
+  {
+    "id": "FB-2025-106",
+    "scenario": "Expired contract \u2014 bill date (2025-03-20) falls after the only contract with this carrier (CC-2023-TCI-001) expired (2024-06-30). A newer contract exists (CC-2024-TCI-002) with different pricing/units.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    }
+  },
+  {
+    "id": "FB-2025-107",
+    "scenario": "Unit of measure mismatch \u2014 contract is per FTL (\u20b948,000/FTL, 1 FTL = 8000 kg capacity). Bill is per-kg (7800 kg \u00d7 \u20b96.50/kg). Semantically valid alternate billing but requires unit reconciliation.",
+    "result": {
+      "status": "approved",
+      "decision": "ai_approved",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": false
+    }
+  },
+  {
+    "id": "FB-2025-108",
+    "scenario": "Contract revision \u2014 bill date (2024-11-20) falls after fuel surcharge revision date (2024-10-01). Must use revised fuel surcharge (18%), not original (12%). Bill correctly uses revised rate \u2014 should pass if agent handles contract revisions.",
+    "result": {
+      "status": "approved",
+      "decision": "ai_approved",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": false
+    }
+  },
+  {
+    "id": "FB-2025-109",
+    "scenario": "Duplicate bill \u2014 same bill number and carrier as FB-2025-101, re-submitted. Must detect and reject/flag.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    }
+  },
+  {
+    "id": "FB-2025-110",
+    "scenario": "Unknown carrier \u2014 'Gati KWE' has no carrier record, no contract. Spot carrier used for emergency shipment. Must escalate to human review.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    }
+  },
+  {
+    "id": "FB-2025-110",
+    "scenario": "Unknown carrier \u2014 'Gati KWE' has no carrier record, no contract. Spot carrier used for emergency shipment. Must escalate to human review.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    },
+    "scenario_check": {
+      "status": "match",
+      "matches": true,
+      "confidence": 0.95,
+      "reason": "Agent explanation and decision correctly identify unknown carrier and lack of contract, requiring human review as per scenario."
+    }
+  },
+  {
+    "id": "FB-2025-101",
+    "scenario": "Clean match \u2014 freight bill references shipment, weight and charges match exactly. Should auto-approve.",
+    "result": {
+      "status": "approved",
+      "decision": "ai_approved",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": false
+    },
+    "scenario_check": {
+      "status": "match",
+      "matches": true,
+      "confidence": 0.95,
+      "reason": "Agent explanation confirms exact matches on shipment, weight, charges; final decision auto-approved as scenario requires."
+    }
+  },
+  {
+    "id": "FB-2025-102",
+    "scenario": "Ambiguous \u2014 carrier has 3 overlapping contracts covering DEL-BOM lane at different rates. No shipment reference. Agent must choose which contract applies.",
+    "result": {
+      "status": "approved",
+      "decision": "ai_approved",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": false
+    },
+    "scenario_check": {
+      "status": "match",
+      "matches": true,
+      "confidence": 0.95,
+      "reason": "Agent correctly identified and applied the appropriate contract among overlapping ones and approved the bill accordingly."
+    }
+  },
+  {
+    "id": "FB-2025-103",
+    "scenario": "Partial delivery \u2014 shipment was for 2000 kg, first BOL delivered 1200 kg, this bill covers remaining 800 kg on a second truck. Agent must trace prior freight bills.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    },
+    "scenario_check": {
+      "status": "match",
+      "matches": true,
+      "confidence": 0.9,
+      "reason": "Agent verified partial delivery quantities and matched bill to one valid contract but flagged review due to multiple active contracts, fitting scenario intent."
+    }
   }
 ]
