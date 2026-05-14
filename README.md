@@ -280,3 +280,41 @@ It uses:
 - `fuel_surcharge_percent`: 6
 
 This matters for `FB-2025-106` and `FB-2025-107`.
+
+## API
+
+Start Neo4j and Postgres:
+
+```bash
+docker compose up -d neo4j
+POSTGRES_PORT=55432 docker compose up -d postgres
+```
+
+Load the seed graph if needed:
+
+```bash
+venv/bin/python data/migration/scripts/load_seed_graph.py
+```
+
+Run the API:
+
+```bash
+POSTGRES_PORT=55432 venv/bin/uvicorn api.main:app --reload
+```
+
+Core endpoints:
+
+```bash
+curl -X POST http://127.0.0.1:8000/freight-bills \
+  -H 'content-type: application/json' \
+  -d '{"id":"FB-2025-102"}'
+
+curl http://127.0.0.1:8000/freight-bills/FB-2025-102
+curl http://127.0.0.1:8000/review-queue
+
+curl -X POST http://127.0.0.1:8000/review/FB-2025-102 \
+  -H 'content-type: application/json' \
+  -d '{"decision":"approve","notes":"verified manually"}'
+```
+
+The API persists freight bill state, rule checks, evidence, review decisions, and audit events in Postgres. It uses Neo4j for Carrier/Contract/Lane/Shipment/BOL/FreightBill traversal and LangGraph for the review interrupt/resume path. If `OPENAI_API_KEY` is set, explanations are generated with the configured LLM model; otherwise the deterministic fallback explanation is used.

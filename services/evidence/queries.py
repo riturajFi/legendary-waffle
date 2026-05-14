@@ -63,6 +63,10 @@ OPTIONAL MATCH (dup:FreightBill)
 WHERE dup.id <> fb.id
   AND dup.carrier_id = fb.carrier_id
   AND dup.bill_number = fb.bill_number
+  AND (
+    dup.bill_date < fb.bill_date
+    OR (dup.bill_date = fb.bill_date AND dup.id < fb.id)
+  )
 RETURN collect(DISTINCT dup) AS duplicate_bills
 """
 
@@ -115,6 +119,8 @@ CUMULATIVE_BILLING_FOR_SHIPMENT_QUERY = """
 MATCH (fb:FreightBill {id: $freight_bill_id})
 MATCH (fb)-[:CLAIMS_SHIPMENT]->(s:Shipment)
 MATCH (bill:FreightBill)-[:CLAIMS_SHIPMENT]->(s)
+WHERE bill.bill_date < fb.bill_date
+  OR (bill.bill_date = fb.bill_date AND bill.id <= fb.id)
 RETURN
   s.id AS shipment_id,
   s.total_weight_kg AS shipment_weight,
@@ -175,7 +181,8 @@ PREVIOUS_BILLS_FOR_SAME_SHIPMENT_QUERY = """
 MATCH (fb:FreightBill {id: $freight_bill_id})
 MATCH (fb)-[:CLAIMS_SHIPMENT]->(shipment:Shipment)
 OPTIONAL MATCH (other:FreightBill)-[:CLAIMS_SHIPMENT]->(shipment)
-WHERE other.id <> fb.id
+WHERE other.bill_date < fb.bill_date
+  OR (other.bill_date = fb.bill_date AND other.id < fb.id)
 RETURN
   shipment,
   collect(DISTINCT other) AS previous_bills,
