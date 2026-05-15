@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from services.agent import FreightAgent
+from services.agent.checkpointing import postgres_checkpointer
 from services.agent.freight_bill_updates import apply_freight_bill_overrides
 from services.observability import ObservabilityLogger
 from services.seed_data import get_seed_freight_bill, seed_freight_bill_ids
@@ -60,17 +61,18 @@ async def lifespan(app: FastAPI):
     _load_dotenv()
     store = PostgresStore()
     store.init_schema()
-    agent = FreightAgent(store=store)
-    observability = ObservabilityLogger()
+    with postgres_checkpointer(store.database_url) as checkpointer:
+        agent = FreightAgent(store=store, checkpointer=checkpointer)
+        observability = ObservabilityLogger()
 
-    app.state.store = store
-    app.state.agent = agent
-    app.state.observability = observability
+        app.state.store = store
+        app.state.agent = agent
+        app.state.observability = observability
 
-    try:
-        yield
-    finally:
-        agent.close()
+        try:
+            yield
+        finally:
+            agent.close()
 
 
 app = FastAPI(title="Freight Bill Review API", version="0.1.0", lifespan=lifespan)

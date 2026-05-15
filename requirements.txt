@@ -3,5 +3,6 @@ fastapi>=0.111,<1.0
 uvicorn[standard]>=0.29,<1.0
 psycopg[binary]>=3.1,<4.0
 langgraph>=0.2
+langgraph-checkpoint-postgres>=3.1,<4.0
 openai>=2.0,<3.0
 python-dotenv>=1.0,<2.0

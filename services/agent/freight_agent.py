@@ -35,6 +35,7 @@ class FreightAgent:
         evidence_service: Optional[EvidenceService] = None,
         rule_engine: Optional[RuleEngine] = None,
         ai_decider: Optional[AiDecisionEngine] = None,
+        checkpointer: Optional[Any] = None,
     ):
         self.store = store
         self.evidence_service = evidence_service or EvidenceService(
@@ -45,6 +46,7 @@ class FreightAgent:
         self.rule_engine = rule_engine or RuleEngine()
         self.ai_decider = ai_decider or AiDecisionEngine()
         self.explanations = ExplanationBuilder()
+        self.checkpointer = checkpointer or InMemorySaver()
         self.graph = self._build_graph()
 
     def close(self) -> None:
@@ -132,7 +134,7 @@ class FreightAgent:
         graph.add_edge("apply_review", END)
         graph.add_edge("apply_modification", "collect_evidence")
 
-        return graph.compile(checkpointer=InMemorySaver())
+        return graph.compile(checkpointer=self.checkpointer)
 
     def _collect_evidence(self, state: AgentState) -> AgentState:
         freight_bill_id = state["freight_bill_id"]

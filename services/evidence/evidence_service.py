@@ -168,6 +168,7 @@ class EvidenceService:
             "duplicates": duplicates,
         }
 
+    # TODO: What if there are 2 carirers linked? 
     def get_billed_carrier(self, freight_bill_id: str) -> Dict[str, Any]:
         record = self._read_single_record(BILLED_CARRIER_QUERY, freight_bill_id)
 
@@ -196,6 +197,7 @@ class EvidenceService:
             "carriers": carriers,
         }
 
+    #TODO: What if multiple shpiments?
     def get_exact_shipment_candidate(self, freight_bill_id: str) -> Dict[str, Any]:
         record = self._read_single_record(EXACT_SHIPMENT_CANDIDATE_QUERY, freight_bill_id)
 
