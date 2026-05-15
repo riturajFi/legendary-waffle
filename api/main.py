@@ -4,9 +4,10 @@ from typing import Any, Dict, Literal, Optional
 
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from services.agent import FreightAgent
+from services.agent.freight_bill_updates import apply_freight_bill_overrides
 from services.observability import ObservabilityLogger
 from services.seed_data import get_seed_freight_bill, seed_freight_bill_ids
 from services.storage import PostgresStore
@@ -39,7 +40,19 @@ class ReviewRequest(BaseModel):
 
 
 class DevResetRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     decision_mode: Optional[Literal["rules", "ai"]] = None
+    overrides: Dict[str, Any] = Field(default_factory=dict)
+    modifications: Dict[str, Any] = Field(default_factory=dict)
+
+    def freight_bill_overrides(self) -> Dict[str, Any]:
+        top_level_overrides = self.model_extra or {}
+        return {
+            **top_level_overrides,
+            **self.overrides,
+            **self.modifications,
+        }
 
 
 @asynccontextmanager
@@ -153,6 +166,14 @@ def reset_freight_bill_for_dev(
     store: PostgresStore = request.app.state.store
     agent: FreightAgent = request.app.state.agent
     reset_options = payload or DevResetRequest()
+    try:
+        freight_bill = apply_freight_bill_overrides(
+            freight_bill_id,
+            freight_bill,
+            reset_options.freight_bill_overrides(),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
 
     try:
         agent.evidence_service.update_freight_bill(freight_bill)

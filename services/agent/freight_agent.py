@@ -7,38 +7,10 @@ from langgraph.types import Command, interrupt
 
 from services.agent.decisions import AiDecisionEngine
 from services.agent.explanations import ExplanationBuilder
+from services.agent.freight_bill_updates import apply_freight_bill_overrides
 from services.evidence.evidence_service import EvidenceService
 from services.rules import RuleEngine
 from services.storage import PostgresStore
-
-
-MODIFIABLE_FREIGHT_BILL_FIELDS = {
-    "carrier_id",
-    "carrier_name",
-    "bill_number",
-    "bill_date",
-    "shipment_reference",
-    "lane",
-    "billed_weight_kg",
-    "rate_per_kg",
-    "billing_unit",
-    "base_charge",
-    "fuel_surcharge",
-    "gst_amount",
-    "total_amount",
-}
-
-REQUIRED_FREIGHT_BILL_FIELDS = {
-    "bill_number",
-    "bill_date",
-    "lane",
-    "billed_weight_kg",
-    "rate_per_kg",
-    "base_charge",
-    "fuel_surcharge",
-    "gst_amount",
-    "total_amount",
-}
 
 
 class AgentState(TypedDict, total=False):
@@ -361,31 +333,13 @@ class FreightAgent:
         freight_bill: Dict[str, Any],
         modifications: Dict[str, Any],
     ) -> Dict[str, Any]:
-        if not modifications:
-            raise ValueError("modify review requires modifications")
-        if "id" in modifications:
-            raise ValueError("freight bill id cannot be modified")
-
-        unknown_fields = set(modifications) - MODIFIABLE_FREIGHT_BILL_FIELDS
-        if unknown_fields:
-            fields = ", ".join(sorted(unknown_fields))
-            raise ValueError(f"unsupported freight bill modification fields: {fields}")
-
-        modified_bill = {
-            **freight_bill,
-            **modifications,
-            "id": freight_bill_id,
-        }
-        missing_fields = [
-            field
-            for field in sorted(REQUIRED_FREIGHT_BILL_FIELDS)
-            if modified_bill.get(field) is None
-        ]
-        if missing_fields:
-            fields = ", ".join(missing_fields)
-            raise ValueError(f"modified freight bill missing required fields: {fields}")
-
-        return modified_bill
+        return apply_freight_bill_overrides(
+            freight_bill_id,
+            freight_bill,
+            modifications,
+            require_overrides=True,
+            context="modify review",
+        )
 
     @staticmethod
     def _status_for_review_decision(reviewer_decision: str) -> tuple[str, str]:

@@ -69,6 +69,27 @@ Review queue:
 curl http://127.0.0.1:8000/review-queue
 ```
 
+Reset one bill from seed data:
+
+```bash
+curl -X POST http://127.0.0.1:8000/dev/reset/FB-2025-101 \
+  -H 'content-type: application/json' \
+  -d '{"decision_mode":"ai"}'
+```
+
+Reset one bill and override fields:
+
+```bash
+curl -X POST http://127.0.0.1:8000/dev/reset/FB-2025-101 \
+  -H 'content-type: application/json' \
+  -d '{
+    "decision_mode":"ai",
+    "overrides":{
+      "total_amount":1000
+    }
+  }'
+```
+
 Observability page:
 
 ```text

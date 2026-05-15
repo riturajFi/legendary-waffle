@@ -376,5 +376,41 @@
       "confidence": 0.95,
       "reason": "Agent correctly flagged the 8.7 billed rate as mismatched against 8.0 contracted rate, requiring review as per scenario intent."
     }
+  },
+  {
+    "id": "FB-2025-105",
+    "scenario": "Rate drift \u2014 billed rate (\u20b98.70/kg) is ~8.75% above the contracted rate (\u20b98.00/kg). Small enough to miss, large enough to matter. Should flag.",
+    "explanation": "The bill FB-2025-105 for shipment SHP-2025-004 on lane BLR-CHN uses billed_weight 1200 kg and billed_rate 8.7 per kg, yielding base_charge 10440.0 as expected (1200 * 8.7). Fuel surcharge at 7% on base_charge is 730.8, GST at 18% on (base_charge + fuel_surcharge) is 2010.74, total sums to 13181.54 matching billed total. The selected contract CC-2024-DEL-001 with active rate_rule ID CC-2024-DEL-001::BLR-CHN specifies rate_per_kg 8.0 and fuel_surcharge_percent 7. The bill date 2025-01-25 is after contract effective date 2024-04-01, matching contract validity. However, the billed rate 8.7 does NOT match the contract rate 8.0, causing rate_check to fail despite all other checks passing (carrier, shipment, duplicate, weight, amount). According to rules, any failed rule check requires review and prevents approval. No duplicates found. Thus, the bill needs reviewer attention due to rate discrepancy despite correct amounts and valid shipment.",
+    "result": {
+      "status": "review_required",
+      "decision": "ai_review",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": true
+    },
+    "scenario_check": {
+      "status": "match",
+      "matches": true,
+      "confidence": 0.95,
+      "reason": "Agent correctly flagged the bill for review due to billed rate exceeding contract rate by ~8.75%, matching scenario intent."
+    }
+  },
+  {
+    "id": "FB-2025-105",
+    "scenario": "Rate drift \u2014 billed rate (\u20b98.70/kg) is ~8.75% above the contracted rate (\u20b98.00/kg). Small enough to miss, large enough to matter. Should flag.",
+    "explanation": "Freight bill FB-2025-105 for shipment SHP-2025-004 on lane BLR-CHN follows contract CC-2024-DEL-001 with rate rule CC-2024-DEL-001::BLR-CHN valid for bill_date 2025-01-25. Billed weight 1200 kg * rate 8.0 = base charge 9600.0 matches actual. Fuel surcharge percent is 7 (no revised fuel surcharge), so fuel surcharge = 9600.0 * 7/100 = 672.0 matches actual. GST = (9600.0 + 672.0) * 0.18 = 1848.96 matches actual. Total = 9600.0 + 672.0 + 1848.96 = 12120.96 matches actual. Shipment weight and BOL weight match 1200 kg. All deterministic rule checks pass: duplicate_check, carrier_check, shipment_check, rate_check, weight_check, amount_check. No duplicates found. All evidence perfectly aligns with billed amounts and rules. Hence, approved.",
+    "result": {
+      "status": "approved",
+      "decision": "ai_approved",
+      "decision_mode": "ai",
+      "decision_source": "ai",
+      "awaiting_review": false
+    },
+    "scenario_check": {
+      "status": "mismatch",
+      "matches": false,
+      "confidence": 0.95,
+      "reason": "Scenario requires flagging rate drift (~8.75% above contract rate), but agent approved without flagging or dispute."
+    }
   }
 ]
